@@ -1,0 +1,315 @@
+INTERACTIVE MEMORY MACHINE — PROJECT LOG
+Team 10 | Creative Machine Learning | SUTD Term 6
+Date: 28 March 2026
+Author: Zaw Ye Htet (ZH)
+
+================================================================================
+SESSION SUMMARY
+================================================================================
+
+Today we set up the entire technical foundation for the Interactive Memory Machine. The full pipeline is scaffolded, tested, and deployed live. All three external APIs (Claude AI, fal.ai image generation, fal.ai video generation) are confirmed working end-to-end.
+
+What was accomplished:
+  - Project scaffolded with Next.js 15 + TypeScript + Tailwind CSS
+  - 4 API routes built (analysis, image generation, video generation, spatial translation)
+  - 6 UI components created with dark clinical/institutional aesthetic
+  - Full pipeline tested: text input -> Claude analysis -> image generation -> spatial translation -> 10s video
+  - Code pushed to GitHub
+  - Live deployment on Vercel
+
+Live URL:  https://interactive-memory-machine.vercel.app
+GitHub:    https://github.com/ZawYeHtet2001/Glitch_CML_project
+
+
+================================================================================
+PROJECT CONCEPT (FOR TEAM REFERENCE)
+================================================================================
+
+We are building a web-based "Interactive Memory Machine" — a system that acts like a spatial memory analyst or therapist.
+
+How it works:
+  1. A user (subject) writes two texts:
+     - A MEMORY: a recent spatial experience (waking, real)
+     - A DREAM: the subconscious reconstruction of that same space
+
+  2. The system analyzes the differences between memory and dream, identifying three types of "glitch":
+     - OMISSION: elements present in memory but absent from dream
+     - OBSCURATION: elements present in both but with reduced clarity in the dream
+     - MISASSOCIATION: elements with incorrect spatial relationships in the dream
+
+  3. The system generates:
+     - Side-by-side images (memory visualization vs. dream visualization)
+     - A 10-second video walkthrough of the distorted interior space
+     - Full documentation of the analysis process (like therapist case notes)
+
+The "glitch" is NOT a visual filter or aesthetic effect. It represents meaningful distortion — how the mind remembers, forgets, blurs, and reorganizes spatial experience.
+
+
+================================================================================
+TECH STACK & DECISIONS
+================================================================================
+
+Framework:       Next.js 15 (App Router) + TypeScript + Tailwind CSS
+  - Why: Single framework handles both the frontend UI and backend API routes.
+    No need to set up a separate server. Simple to deploy.
+
+Image Generation: fal.ai — Flux Schnell (development) / Flux Pro (production)
+  - Why: Best quality for architectural/spatial imagery.
+    Cost: ~$0.03-0.05 per image.
+
+Video Generation: fal.ai — Kling v2 Master (image-to-video)
+  - Why: Good camera movement control, architectural scene coherence.
+    Cost: ~$0.07/second (~$0.70 for a 10-second video).
+
+Interpretive Agent: Claude API (Sonnet 4)
+  - Why: Claude acts as the "analyst/therapist" — it reads both texts and produces
+    structured analysis of how memory has shifted. This is the conceptual core.
+    Cost: ~$0.01 per session (negligible).
+
+Hosting: Vercel (free tier)
+  - Why: One-click deploy from GitHub, zero DevOps needed.
+
+Why fal.ai over alternatives:
+  - Single unified API for BOTH image and video generation
+  - One SDK, one billing account, one set of docs
+  - Avoids juggling Replicate + RunwayML + Stability AI separately
+
+Estimated cost per full session: ~$0.80-1.00
+Estimated total project budget:  ~$30-50
+
+
+================================================================================
+PIPELINE ARCHITECTURE
+================================================================================
+
+The pipeline follows our 6-step methodology from the presentation:
+
+  USER INPUT                     API CALLS                       OUTPUT
+  -----------                    ---------                       ------
+  Step 1: Memory text --+
+                        +---> Step 3-4: Claude API ---> Analysis JSON
+  Step 1: Dream text  --+         |                     (analyst notes +
+                                  |                      distortion categories)
+                                  v
+                        Step 2: fal.ai Flux ---> Memory image
+                        Step 2: fal.ai Flux ---> Dream image
+                                  |
+                                  v
+                        Step 5: Claude API ---> Spatial translation
+                                  |              (video prompt with
+                                  |               distortion instructions)
+                                  v
+                        Step 6: fal.ai Kling ---> 10-second video walkthrough
+
+
+Claude AI is called TWICE per session:
+
+  Call 1 — ANALYSIS (Steps 3-4):
+    Input:  Memory text + Dream text
+    Output: Structured JSON with distortions categorized as
+            OMISSION / OBSCURATION / MISASSOCIATION,
+            each with element name, interpretation, severity (1-5).
+            Plus 2-3 paragraphs of prose "analyst notes."
+
+  Call 2 — SPATIAL TRANSLATION (Step 5):
+    Input:  The analysis JSON from Call 1
+    Output: Detailed architectural image prompt (describing the distorted space)
+            + video prompt (camera movement through the space)
+            + style modifiers
+
+
+================================================================================
+CLAUDE AI SYSTEM PROMPTS (FULL TEXT)
+================================================================================
+
+--- ANALYSIS PROMPT ---
+
+"You are a spatial memory analyst studying how architectural experiences
+transform in subconscious recall. You analyze the differences between a
+subject's waking spatial memory and their dream reconstruction of the
+same space.
+
+Your role is clinical and interpretive — like a therapist examining how
+the mind distorts, omits, and reorganizes spatial experience during sleep.
+
+Categorize every difference into exactly one of:
+- OMISSION: Elements present in memory but absent from dream
+- OBSCURATION: Elements present in both but with reduced clarity, blurred
+  boundaries, or diminished detail in the dream
+- MISASSOCIATION: Elements present in both but with incorrect spatial
+  relationships, wrong contexts, or displaced connections"
+
+Output format: JSON with subject_id, distortions array, overall_pattern,
+and analyst_notes.
+
+
+--- SPATIAL TRANSLATION PROMPT ---
+
+"You are translating psychological spatial distortions into concrete
+architectural visualization instructions. Given an analysis of memory
+distortions, generate prompts for AI image and video generators that
+will create a walkthrough of an interior space shaped by these distortions.
+
+Map each distortion type to spatial conditions:
+- OMISSION -> gaps, missing walls, incomplete rooms, void spaces
+- OBSCURATION -> fog, blur, dissolving surfaces, uncertain boundaries
+- MISASSOCIATION -> impossible adjacencies, objects in wrong rooms,
+  scale distortions, spatial contradictions
+
+The generated space should feel both familiar and deeply wrong — like a
+place you almost recognize but that follows dream logic rather than
+physical logic."
+
+Output format: JSON with image_prompt, video_prompt, and style_modifiers.
+
+
+================================================================================
+TEST RESULTS (28 MARCH 2026)
+================================================================================
+
+Test input (Subject: ZH):
+  Memory: "Studio at SUTD. Large room, long tables, high ceiling with
+          concrete beams. Tall windows on left with afternoon light.
+          Desk in the corner near a white partition. Laser cutter area
+          at the back. Grey epoxy floor."
+
+  Dream:  "Dream studio felt enormous, endless ceiling. Tables floating.
+          Windows glowing white, can't see outside. Desk in center not
+          corner. Partition wall gone. Back of room was darkness.
+          Floor reflective like water."
+
+Analysis result (7 distortions identified):
+  1. OBSCURATION — Ceiling: high with beams -> enormous, endless, no structure (severity 4)
+  2. MISASSOCIATION — Desk: corner position -> center of room (severity 3)
+  3. OMISSION — Partition wall: present -> absent (severity 2)
+  4. OBSCURATION — Windows: transparent with view -> opaque glowing white (severity 4)
+  5. MISASSOCIATION — Tables: on floor -> floating (severity 5)
+  6. OBSCURATION — Laser cutter area: defined space -> dissolved into darkness (severity 4)
+  7. MISASSOCIATION — Floor: grey epoxy -> reflective like water (severity 3)
+
+  Overall pattern: "LIBERATION AND CENTRALIZATION"
+
+  Analyst notes excerpt: "Subject ZH demonstrates a pronounced pattern of
+  spatial liberation, where the dreaming mind systematically removes physical
+  constraints and hierarchical boundaries present in the waking studio
+  environment..."
+
+Image generated: https://v3b.fal.media/files/b/0a93f96a/oqhg-O1SKhq3RD0h7QWGE.jpg
+Video generated: https://v3b.fal.media/files/b/0a93f999/C-OIPe7mJI4L5v3DtI42L_output.mp4
+
+All APIs confirmed working.
+
+
+================================================================================
+FILE STRUCTURE
+================================================================================
+
+Glitch_CML_project/
+|-- CLAUDE.md                         # Project guidance for Claude Code
+|-- CML_Glitch.pdf                    # Team presentation deck
+|-- package.json                      # Dependencies and scripts
+|-- next.config.ts                    # Next.js configuration
+|-- tsconfig.json                     # TypeScript configuration
+|-- postcss.config.mjs                # Tailwind CSS config
+|-- .env.local                        # API keys (NOT committed to Git)
+|-- .gitignore
+|
+|-- src/
+|   |-- app/
+|   |   |-- layout.tsx                # Root layout
+|   |   |-- page.tsx                  # Main single-page app (pipeline orchestration)
+|   |   |-- globals.css               # Dark theme, typing cursor animation, glitch effect
+|   |   |-- api/
+|   |       |-- analyze/route.ts      # Claude AI — distortion analysis
+|   |       |-- generate-image/route.ts  # fal.ai Flux — text-to-image
+|   |       |-- generate-video/route.ts  # fal.ai Kling — image-to-video
+|   |       |-- translate/route.ts    # Claude AI — spatial translation
+|   |
+|   |-- components/
+|   |   |-- InputForm.tsx             # Subject ID + memory + dream text inputs
+|   |   |-- ProgressTracker.tsx       # Visual progress bar across pipeline steps
+|   |   |-- AnalystNotes.tsx          # Displays Claude's analysis with typing animation
+|   |   |-- ImageComparison.tsx       # Side-by-side memory vs. dream images
+|   |   |-- SpatialTranslation.tsx    # Shows transformation parameters
+|   |   |-- VideoPlayer.tsx           # Final video output with controls
+|   |
+|   |-- lib/
+|       |-- claude.ts                 # Claude API client + system prompts
+|       |-- fal.ts                    # fal.ai client for image + video
+|       |-- types.ts                  # TypeScript interfaces for all data
+|
+|-- docs/
+    |-- project-log-2026-03-28.txt    # This file
+
+
+================================================================================
+WEEK-BY-WEEK PLAN
+================================================================================
+
+WEEK 1 (Mar 28 - Apr 4): FOUNDATION + DATA COLLECTION  [PARTLY DONE]
+  ZH:       Project setup, deployment, API integration        [DONE]
+  JW:       Write memory + dream narrative
+  NT:       Write memory + dream narrative
+  VP:       Write memory + dream narrative
+  ZH:       Write memory + dream narrative
+  Everyone: Review the live prototype and give feedback
+
+WEEK 2 (Apr 5 - Apr 11): CONTENT + PROMPT TUNING
+  ZH:       Tune Claude analysis prompts based on team feedback
+  ZH:       Tune image/video generation prompts for better spatial quality
+  Everyone: Run their narratives through the system, review outputs
+  ZH:       Build Gallery/Case Files section (browse all 4 team sessions)
+
+WEEK 3 (Apr 12 - Apr 18): POLISH + FINAL CONTENT
+  ZH:       Progressive reveal animations, typing effects, loading states
+  ZH:       Pre-cache all 4 team sessions (backup for demo)
+  Everyone: Final round of prompt tuning
+  Everyone: Review all outputs for presentation quality
+
+WEEK 4 (Apr 19 - Apr 25): PRESENTATION PREP
+  Everyone: Bug fixes and final polish
+  Everyone: Project documentation / write-up
+  Everyone: Prepare presentation materials, screen recordings
+  Everyone: Backup plan — pre-cached videos in case live demo APIs are slow
+
+
+================================================================================
+ACTION ITEMS FOR THE TEAM
+================================================================================
+
+FOR EVERYONE (by Apr 4):
+  [ ] Write your MEMORY narrative (a recent spatial experience, ~100-200 words)
+      Focus on: the space, architecture, objects, light, atmosphere, your position
+  [ ] Write your DREAM narrative (the dream version of the same space, ~100-200 words)
+      Focus on: what changed, shifted, disappeared, felt wrong, was reorganized
+  [ ] Test the live site: https://interactive-memory-machine.vercel.app
+      Try entering your narratives and see what the system produces
+  [ ] Share feedback on the output quality and UI
+
+FOR ZH:
+  [ ] Collect all 4 narratives and run them through the system
+  [ ] Iterate on prompts based on output quality
+  [ ] Begin UI polish for Week 2
+
+
+================================================================================
+COSTS & BUDGET
+================================================================================
+
+Per session (1 user running the full pipeline):
+  Claude analysis:     ~$0.01
+  Claude translation:  ~$0.01
+  fal.ai image (x2):  ~$0.06-0.10
+  fal.ai video (10s):  ~$0.70
+  TOTAL:               ~$0.80-1.00
+
+For development + testing + 4 final sessions:
+  Estimated total:     ~$30-50
+
+Use Flux Schnell (cheaper) during development.
+Switch to Flux Pro only for final presentation-quality outputs.
+
+
+================================================================================
+END OF LOG
+================================================================================
