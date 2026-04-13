@@ -1,171 +1,238 @@
 "use client";
 
-import { useState } from "react";
-import { SessionData } from "@/lib/types";
+import { useReducer, useCallback } from "react";
+import { SessionData, CanvasState } from "@/lib/types";
 import InputForm from "@/components/InputForm";
-import ProgressTracker from "@/components/ProgressTracker";
-import AnalystNotes from "@/components/AnalystNotes";
-import ImageComparison from "@/components/ImageComparison";
-import SpatialTranslation from "@/components/SpatialTranslation";
-import VideoPlayer from "@/components/VideoPlayer";
+import NodeCanvas from "@/components/NodeCanvas";
+import GenerateButton from "@/components/GenerateButton";
+
+type SessionAction =
+  | { type: "START_ANALYSIS"; subject_id: string; input_text: string }
+  | { type: "ANALYSIS_COMPLETE"; analysis: SessionData["analysis"] }
+  | { type: "UPDATE_CANVAS"; canvas: CanvasState }
+  | { type: "START_GENERATION" }
+  | { type: "GENERATION_COMPLETE"; image_url: string }
+  | { type: "SET_ERROR"; error: string }
+  | { type: "RESET" };
+
+const initialSession: SessionData = {
+  subject_id: "",
+  input_text: "",
+  status: "input",
+};
+
+function sessionReducer(
+  state: SessionData,
+  action: SessionAction
+): SessionData {
+  switch (action.type) {
+    case "START_ANALYSIS":
+      return {
+        ...initialSession,
+        subject_id: action.subject_id,
+        input_text: action.input_text,
+        status: "analyzing",
+      };
+    case "ANALYSIS_COMPLETE":
+      return { ...state, analysis: action.analysis, status: "mapping" };
+    case "UPDATE_CANVAS":
+      return { ...state, canvas: action.canvas };
+    case "START_GENERATION":
+      return { ...state, status: "generating" };
+    case "GENERATION_COMPLETE":
+      return {
+        ...state,
+        generated_image_url: action.image_url,
+        status: "complete",
+      };
+    case "SET_ERROR":
+      return { ...state, status: "error", error: action.error };
+    case "RESET":
+      return initialSession;
+    default:
+      return state;
+  }
+}
 
 export default function Home() {
-  const [session, setSession] = useState<SessionData>({
-    subject_id: "",
-    memory_text: "",
-    dream_text: "",
-    status: "input",
-  });
+  const [session, dispatch] = useReducer(sessionReducer, initialSession);
 
-  const runPipeline = async (subjectId: string, memoryText: string, dreamText: string) => {
-    setSession({
+  const handleSubmit = async (subjectId: string, inputText: string) => {
+    dispatch({
+      type: "START_ANALYSIS",
       subject_id: subjectId,
-      memory_text: memoryText,
-      dream_text: dreamText,
-      status: "analyzing",
+      input_text: inputText,
     });
 
     try {
-      // Step 3-4: Claude Analysis
-      const analysisRes = await fetch("/api/analyze", {
+      const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject_id: subjectId, memory_text: memoryText, dream_text: dreamText }),
+        body: JSON.stringify({ subject_id: subjectId, input_text: inputText }),
       });
-      if (!analysisRes.ok) throw new Error("Analysis failed");
-      const analysis = await analysisRes.json();
-
-      setSession((prev) => ({ ...prev, analysis, status: "generating_images" }));
-
-      // Step 2: Generate images (memory + dream visualizations)
-      const [memoryImageRes, dreamImageRes] = await Promise.all([
-        fetch("/api/generate-image", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: `Architectural interior space: ${memoryText}`, type: "memory" }),
-        }),
-        fetch("/api/generate-image", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: `Dreamlike distorted architectural interior: ${dreamText}`, type: "dream" }),
-        }),
-      ]);
-      if (!memoryImageRes.ok || !dreamImageRes.ok) throw new Error("Image generation failed");
-      const memoryImage = await memoryImageRes.json();
-      const dreamImage = await dreamImageRes.json();
-
-      setSession((prev) => ({
-        ...prev,
-        memory_image_url: memoryImage.url,
-        dream_image_url: dreamImage.url,
-        status: "translating",
-      }));
-
-      // Step 5: Spatial Translation
-      const translateRes = await fetch("/api/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ analysis }),
-      });
-      if (!translateRes.ok) throw new Error("Spatial translation failed");
-      const spatialTranslation = await translateRes.json();
-
-      setSession((prev) => ({ ...prev, spatial_translation: spatialTranslation, status: "generating_video" }));
-
-      // Step 6: Generate Video
-      const videoRes = await fetch("/api/generate-video", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          image_url: dreamImage.url,
-          prompt: spatialTranslation.video_prompt,
-        }),
-      });
-      if (!videoRes.ok) throw new Error("Video generation failed");
-      const video = await videoRes.json();
-
-      setSession((prev) => ({ ...prev, video_url: video.url, status: "complete" }));
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Analysis failed (${res.status})`);
+      }
+      const analysis = await res.json();
+      dispatch({ type: "ANALYSIS_COMPLETE", analysis });
     } catch (error) {
-      setSession((prev) => ({
-        ...prev,
-        status: "error",
-        error: error instanceof Error ? error.message : "Unknown error",
-      }));
+      dispatch({
+        type: "SET_ERROR",
+        error: error instanceof Error ? error.message : "Analysis failed",
+      });
     }
   };
 
-  const steps = [
-    { key: "analyzing", label: "01 — ANALYSIS" },
-    { key: "generating_images", label: "02 — GENERATION" },
-    { key: "translating", label: "03 — SPATIAL TRANSLATION" },
-    { key: "generating_video", label: "04 — VIDEO SYNTHESIS" },
-    { key: "complete", label: "05 — COMPLETE" },
-  ];
+  const handleConnectionsChange = useCallback((canvas: CanvasState) => {
+    dispatch({ type: "UPDATE_CANVAS", canvas });
+  }, []);
+
+  const handleGenerate = async () => {
+    if (!session.canvas || session.canvas.connections.length === 0) return;
+
+    dispatch({ type: "START_GENERATION" });
+
+    try {
+      const res = await fetch("/api/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          connections: session.canvas.connections,
+          keywords: session.canvas.keywords,
+          operations: session.canvas.operations,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Generation failed (${res.status})`);
+      }
+      const result = await res.json();
+      dispatch({ type: "GENERATION_COMPLETE", image_url: result.url });
+    } catch (error) {
+      dispatch({
+        type: "SET_ERROR",
+        error: error instanceof Error ? error.message : "Generation failed",
+      });
+    }
+  };
+
+  const statusLabel =
+    session.status === "analyzing"
+      ? "ANALYZING SPATIAL RECALL..."
+      : session.status === "generating"
+        ? "GENERATING ARTIFACT..."
+        : null;
 
   return (
-    <main className="max-w-4xl mx-auto px-6 py-12">
+    <main className="max-w-5xl mx-auto px-6 py-12">
       {/* Header */}
-      <header className="mb-16 border-b border-[var(--border)] pb-8">
+      <header className="mb-12 border-b border-[var(--border)] pb-8">
         <h1 className="text-2xl tracking-[0.3em] font-light glitch-text">
           INTERACTIVE MEMORY MACHINE
         </h1>
         <p className="text-sm text-[var(--muted)] mt-2 tracking-widest">
-          SPATIAL DISORIENTATION — MEMORY ANALYSIS LABORATORY
+          SPATIAL DISORIENTATION — NODE MAPPING INTERFACE
         </p>
       </header>
 
-      {/* Input Form */}
-      {session.status === "input" && (
-        <InputForm onSubmit={runPipeline} />
+      {/* Input Phase */}
+      {session.status === "input" && <InputForm onSubmit={handleSubmit} />}
+
+      {/* Loading */}
+      {statusLabel && (
+        <div className="border border-[var(--border)] p-8 text-center">
+          <p className="text-sm text-[var(--accent)] tracking-widest typing-cursor">
+            {statusLabel}
+          </p>
+        </div>
       )}
 
-      {/* Pipeline Progress */}
-      {session.status !== "input" && (
-        <div className="space-y-12">
-          <ProgressTracker currentStatus={session.status} steps={steps} />
+      {/* Mapping Phase — Node Canvas */}
+      {(session.status === "mapping" || session.status === "complete") &&
+        session.analysis && (
+          <div className="space-y-4">
+            {/* Session info */}
+            <div className="flex justify-between items-center">
+              <p className="text-xs text-[var(--muted)] tracking-widest">
+                SUBJECT: {session.subject_id} — {session.analysis.keywords.length} KEYWORDS EXTRACTED
+              </p>
+              {session.analysis.interpretation && (
+                <p className="text-xs text-[var(--muted)] max-w-md text-right">
+                  {session.analysis.interpretation}
+                </p>
+              )}
+            </div>
 
-          {/* Session Info */}
-          <div className="border border-[var(--border)] p-4">
+            {/* Canvas */}
+            <NodeCanvas
+              analysis={session.analysis}
+              onConnectionsChange={handleConnectionsChange}
+            />
+
+            {/* Generate button */}
+            {session.status === "mapping" && (
+              <GenerateButton
+                connectionCount={session.canvas?.connections.length ?? 0}
+                isGenerating={false}
+                onGenerate={handleGenerate}
+              />
+            )}
+          </div>
+        )}
+
+      {/* Generating state with canvas still visible */}
+      {session.status === "generating" && session.analysis && (
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
             <p className="text-xs text-[var(--muted)] tracking-widest">
-              SUBJECT: {session.subject_id} — SESSION #{String(Date.now()).slice(-4)}
+              SUBJECT: {session.subject_id}
             </p>
           </div>
+          <NodeCanvas
+            analysis={session.analysis}
+            onConnectionsChange={handleConnectionsChange}
+          />
+          <GenerateButton
+            connectionCount={session.canvas?.connections.length ?? 0}
+            isGenerating={true}
+            onGenerate={handleGenerate}
+          />
+        </div>
+      )}
 
-          {/* Analysis & Interpretation */}
-          {session.analysis && (
-            <AnalystNotes analysis={session.analysis} />
-          )}
-
-          {/* Generated Images */}
-          {session.memory_image_url && session.dream_image_url && (
-            <ImageComparison
-              memoryUrl={session.memory_image_url}
-              dreamUrl={session.dream_image_url}
+      {/* Generated Image Output */}
+      {session.status === "complete" && session.generated_image_url && (
+        <div className="mt-8 space-y-4">
+          <label className="block text-xs tracking-widest text-[var(--accent)]">
+            GENERATED ARTIFACT
+          </label>
+          <div className="border border-[var(--border)] p-2">
+            <img
+              src={session.generated_image_url}
+              alt="Generated spatial memory artifact"
+              className="w-full"
             />
-          )}
+          </div>
+          <button
+            onClick={() => dispatch({ type: "RESET" })}
+            className="text-xs text-[var(--muted)] underline hover:text-[var(--accent)] transition-colors"
+          >
+            NEW SESSION
+          </button>
+        </div>
+      )}
 
-          {/* Spatial Translation */}
-          {session.spatial_translation && (
-            <SpatialTranslation translation={session.spatial_translation} />
-          )}
-
-          {/* Video Output */}
-          {session.video_url && (
-            <VideoPlayer url={session.video_url} />
-          )}
-
-          {/* Error Display */}
-          {session.status === "error" && (
-            <div className="border border-red-800 bg-red-950/30 p-6">
-              <p className="text-red-400 text-sm">ERROR: {session.error}</p>
-              <button
-                onClick={() => setSession({ subject_id: "", memory_text: "", dream_text: "", status: "input" })}
-                className="mt-4 text-xs text-[var(--accent)] underline"
-              >
-                RESTART SESSION
-              </button>
-            </div>
-          )}
+      {/* Error */}
+      {session.status === "error" && (
+        <div className="border border-red-800 bg-red-950/30 p-6 mt-8">
+          <p className="text-red-400 text-sm">ERROR: {session.error}</p>
+          <button
+            onClick={() => dispatch({ type: "RESET" })}
+            className="mt-4 text-xs text-[var(--accent)] underline"
+          >
+            RESTART SESSION
+          </button>
         </div>
       )}
     </main>

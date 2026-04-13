@@ -1,42 +1,83 @@
-export interface Distortion {
-  type: "OMISSION" | "OBSCURATION" | "MISASSOCIATION";
-  element: string;
-  memory_description: string;
-  dream_description: string;
-  interpretation: string;
-  severity: number;
+// --- Keyword Fragments ---
+
+export type KeywordCategory =
+  | "object"
+  | "person"
+  | "event"
+  | "spatial_quality"
+  | "experience";
+
+export interface KeywordFragment {
+  id: string;
+  text: string;
+  category: KeywordCategory;
+  position: { x: number; y: number };
 }
 
-export interface AnalysisResult {
+// --- Operation Nodes (6 Parameters) ---
+
+export type OperationType =
+  | "clarity"
+  | "completeness"
+  | "stability"
+  | "misassociation"
+  | "vulnerability"
+  | "intimacy";
+
+export interface OperationNode {
+  id: OperationType;
+  label: string;
+  description: string;
+  score: number; // 0-1, assigned by Claude, locked
+  position: { x: number; y: number };
+  connectedKeywords: string[]; // keyword IDs
+}
+
+// --- Connections (Wires) ---
+
+export interface Connection {
+  id: string;
+  fromKeywordId: string;
+  toOperationId: OperationType;
+}
+
+// --- Claude Analysis Response ---
+
+export interface SubconsciousAnalysis {
   subject_id: string;
-  distortions: Distortion[];
-  overall_pattern: string;
-  analyst_notes: string;
+  keywords: KeywordFragment[];
+  scores: Record<OperationType, number>;
+  interpretation: string;
 }
 
-export interface SpatialTranslation {
-  image_prompt: string;
-  video_prompt: string;
-  style_modifiers: string;
+// --- Canvas State ---
+
+export interface CanvasState {
+  keywords: KeywordFragment[];
+  operations: OperationNode[];
+  connections: Connection[];
+  activeWire: {
+    fromKeywordId: string;
+    mousePos: { x: number; y: number };
+  } | null;
 }
+
+// --- Session ---
+
+export type SessionStatus =
+  | "input"
+  | "analyzing"
+  | "mapping"
+  | "generating"
+  | "complete"
+  | "error";
 
 export interface SessionData {
   subject_id: string;
-  memory_text: string;
-  dream_text: string;
-  analysis?: AnalysisResult;
-  memory_image_url?: string;
-  dream_image_url?: string;
-  spatial_translation?: SpatialTranslation;
-  video_url?: string;
-  status: "input" | "analyzing" | "generating_images" | "translating" | "generating_video" | "complete" | "error";
+  input_text: string;
+  analysis?: SubconsciousAnalysis;
+  canvas?: CanvasState;
+  generated_image_url?: string;
+  status: SessionStatus;
   error?: string;
 }
-
-export type PipelineStep =
-  | "input"
-  | "analyzing"
-  | "generating_images"
-  | "translating"
-  | "generating_video"
-  | "complete";

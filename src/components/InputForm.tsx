@@ -3,18 +3,17 @@
 import { useState } from "react";
 
 interface InputFormProps {
-  onSubmit: (subjectId: string, memoryText: string, dreamText: string) => void;
+  onSubmit: (subjectId: string, inputText: string) => void;
 }
 
 export default function InputForm({ onSubmit }: InputFormProps) {
   const [subjectId, setSubjectId] = useState("");
-  const [memoryText, setMemoryText] = useState("");
-  const [dreamText, setDreamText] = useState("");
+  const [inputText, setInputText] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (subjectId && memoryText && dreamText) {
-      onSubmit(subjectId, memoryText, dreamText);
+    if (subjectId && inputText) {
+      onSubmit(subjectId, inputText);
     }
   };
 
@@ -34,38 +33,21 @@ export default function InputForm({ onSubmit }: InputFormProps) {
         />
       </div>
 
-      {/* Memory Record */}
+      {/* Subconsciousness Text */}
       <div>
         <label className="block text-xs tracking-widest text-[var(--accent)] mb-2">
-          01 — MEMORY RECORD (WAKING EXPERIENCE)
+          SUBCONSCIOUS SPATIAL RECALL
         </label>
         <p className="text-xs text-[var(--muted)] mb-3">
-          Describe a recent spatial experience from your memory. Focus on the architecture,
-          the space, the objects, the light, the atmosphere.
+          Describe a remembered spatial experience — a place from memory, dream, or
+          somewhere in between. Focus on what you recall: the architecture, objects,
+          people, sensations, and how the space felt.
         </p>
         <textarea
-          value={memoryText}
-          onChange={(e) => setMemoryText(e.target.value)}
-          rows={6}
-          placeholder="I remember walking through a long corridor with tall windows on the left side..."
-          className="w-full bg-[var(--card)] border border-[var(--border)] p-4 text-sm text-[var(--foreground)] placeholder-[var(--muted)] focus:border-[var(--accent)] focus:outline-none resize-none"
-        />
-      </div>
-
-      {/* Dream Record */}
-      <div>
-        <label className="block text-xs tracking-widest text-[var(--accent)] mb-2">
-          02 — DREAM RECORD (SUBCONSCIOUS RECONSTRUCTION)
-        </label>
-        <p className="text-xs text-[var(--muted)] mb-3">
-          Describe the dream version of the same space. How did your subconscious
-          reconstruct it? What changed, shifted, or disappeared?
-        </p>
-        <textarea
-          value={dreamText}
-          onChange={(e) => setDreamText(e.target.value)}
-          rows={6}
-          placeholder="In the dream, the corridor seemed endless. The windows were there but I couldn't see through them..."
+          value={inputText}
+          onChange={(e) => setInputText(e.target.value)}
+          rows={8}
+          placeholder="I remember a corridor that kept stretching longer as I walked. The walls were concrete but they felt soft, like skin. There was a door at the end but every time I reached for it..."
           className="w-full bg-[var(--card)] border border-[var(--border)] p-4 text-sm text-[var(--foreground)] placeholder-[var(--muted)] focus:border-[var(--accent)] focus:outline-none resize-none"
         />
       </div>
@@ -73,10 +55,10 @@ export default function InputForm({ onSubmit }: InputFormProps) {
       {/* Submit */}
       <button
         type="submit"
-        disabled={!subjectId || !memoryText || !dreamText}
+        disabled={!subjectId || !inputText}
         className="w-full border border-[var(--accent)] text-[var(--accent)] py-3 text-sm tracking-[0.3em] hover:bg-[var(--accent)] hover:text-black transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
       >
-        BEGIN ANALYSIS
+        EXTRACT + ANALYZE
       </button>
     </form>
   );
