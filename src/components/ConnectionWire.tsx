@@ -7,7 +7,8 @@ interface ConnectionWireProps {
   to: { x: number; y: number };
   isActive?: boolean; // true for the wire being drawn
   isSelected?: boolean;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent) => void;
+  onPointerDown?: (e: React.PointerEvent) => void;
 }
 
 export default function ConnectionWire({
@@ -16,6 +17,7 @@ export default function ConnectionWire({
   isActive = false,
   isSelected = false,
   onClick,
+  onPointerDown,
 }: ConnectionWireProps) {
   const dx = Math.abs(to.x - from.x) * 0.4;
   const d = `M ${from.x},${from.y} C ${from.x + dx},${from.y} ${to.x - dx},${to.y} ${to.x},${to.y}`;
@@ -30,6 +32,7 @@ export default function ConnectionWire({
           stroke="transparent"
           strokeWidth={12}
           onClick={onClick}
+          onPointerDown={onPointerDown}
           style={{ cursor: "pointer", pointerEvents: "stroke" }}
         />
       )}

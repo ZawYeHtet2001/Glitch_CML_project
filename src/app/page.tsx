@@ -1,7 +1,7 @@
 "use client";
 
-import { useReducer, useCallback } from "react";
-import { SessionData, CanvasState } from "@/lib/types";
+import { useReducer, useCallback, useState } from "react";
+import { SessionData, CanvasState, type ImageModel, IMAGE_MODEL_LABELS } from "@/lib/types";
 import InputForm from "@/components/InputForm";
 import NodeCanvas from "@/components/NodeCanvas";
 import GenerateButton from "@/components/GenerateButton";
@@ -11,7 +11,7 @@ type SessionAction =
   | { type: "ANALYSIS_COMPLETE"; analysis: SessionData["analysis"] }
   | { type: "UPDATE_CANVAS"; canvas: CanvasState }
   | { type: "START_GENERATION" }
-  | { type: "GENERATION_COMPLETE"; image_url: string }
+  | { type: "GENERATION_COMPLETE"; image_url: string; explanation: string }
   | { type: "SET_ERROR"; error: string }
   | { type: "RESET" };
 
@@ -43,6 +43,7 @@ function sessionReducer(
       return {
         ...state,
         generated_image_url: action.image_url,
+        explanation: action.explanation,
         status: "complete",
       };
     case "SET_ERROR":
@@ -56,6 +57,7 @@ function sessionReducer(
 
 export default function Home() {
   const [session, dispatch] = useReducer(sessionReducer, initialSession);
+  const [imageModel, setImageModel] = useState<ImageModel>("recraft");
 
   const handleSubmit = async (subjectId: string, inputText: string) => {
     dispatch({
@@ -101,6 +103,10 @@ export default function Home() {
           connections: session.canvas.connections,
           keywords: session.canvas.keywords,
           operations: session.canvas.operations,
+          analysis: session.analysis,
+          input_text: session.input_text,
+          tone_archetype: session.analysis?.tone_archetype,
+          image_model: imageModel,
         }),
       });
       if (!res.ok) {
@@ -108,7 +114,11 @@ export default function Home() {
         throw new Error(err.error || `Generation failed (${res.status})`);
       }
       const result = await res.json();
-      dispatch({ type: "GENERATION_COMPLETE", image_url: result.url });
+      dispatch({
+        type: "GENERATION_COMPLETE",
+        image_url: result.url,
+        explanation: result.explanation ?? "",
+      });
     } catch (error) {
       dispatch({
         type: "SET_ERROR",
@@ -148,14 +158,15 @@ export default function Home() {
         </div>
       )}
 
-      {/* Mapping Phase — Node Canvas */}
-      {(session.status === "mapping" || session.status === "complete") &&
+      {/* Mapping / Generating / Complete — single canvas instance so internal state persists */}
+      {(session.status === "mapping" ||
+        session.status === "generating" ||
+        session.status === "complete") &&
         session.analysis && (
           <div className="space-y-4">
-            {/* Session info */}
             <div className="flex justify-between items-center">
               <p className="text-xs text-[var(--muted)] tracking-widest">
-                SUBJECT: {session.subject_id} — {session.analysis.keywords.length} KEYWORDS EXTRACTED
+                SUBJECT: {session.subject_id} — {session.analysis.keywords.length} KEYWORDS — BASE SHAPE: {session.analysis.tone_archetype?.toUpperCase() || "ORGANIC"}
               </p>
               {session.analysis.interpretation && (
                 <p className="text-xs text-[var(--muted)] max-w-md text-right">
@@ -164,42 +175,75 @@ export default function Home() {
               )}
             </div>
 
-            {/* Canvas */}
+            {/* Original input text — kept visible through mapping/generating/complete */}
+            {session.input_text && (
+              <details
+                open
+                className="border border-[var(--border)] bg-[var(--card)] p-4"
+              >
+                <summary className="text-xs tracking-widest text-[var(--accent)] cursor-pointer select-none">
+                  SUBCONSCIOUS RECALL (INPUT)
+                </summary>
+                <p className="mt-3 text-sm text-[var(--foreground)] leading-relaxed whitespace-pre-wrap">
+                  {session.input_text}
+                </p>
+              </details>
+            )}
+
             <NodeCanvas
               analysis={session.analysis}
               onConnectionsChange={handleConnectionsChange}
             />
 
-            {/* Generate button */}
-            {session.status === "mapping" && (
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <GenerateButton
                 connectionCount={session.canvas?.connections.length ?? 0}
-                isGenerating={false}
+                isGenerating={session.status === "generating"}
+                hasPreviousResult={session.status === "complete"}
                 onGenerate={handleGenerate}
               />
-            )}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  flexShrink: 0,
+                }}
+              >
+                <label
+                  style={{
+                    fontSize: 10,
+                    letterSpacing: "0.15em",
+                    color: "var(--muted)",
+                    fontFamily: "var(--font-mono-stack)",
+                  }}
+                >
+                  MODEL
+                </label>
+                <select
+                  value={imageModel}
+                  onChange={(e) => setImageModel(e.target.value as ImageModel)}
+                  style={{
+                    background: "var(--card)",
+                    color: "var(--foreground)",
+                    border: "1px solid var(--border)",
+                    padding: "6px 10px",
+                    fontSize: 11,
+                    fontFamily: "var(--font-mono-stack)",
+                    letterSpacing: "0.05em",
+                    cursor: "pointer",
+                  }}
+                >
+                  {(Object.keys(IMAGE_MODEL_LABELS) as ImageModel[]).map((m) => (
+                    <option key={m} value={m}>
+                      {IMAGE_MODEL_LABELS[m]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
         )}
-
-      {/* Generating state with canvas still visible */}
-      {session.status === "generating" && session.analysis && (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <p className="text-xs text-[var(--muted)] tracking-widest">
-              SUBJECT: {session.subject_id}
-            </p>
-          </div>
-          <NodeCanvas
-            analysis={session.analysis}
-            onConnectionsChange={handleConnectionsChange}
-          />
-          <GenerateButton
-            connectionCount={session.canvas?.connections.length ?? 0}
-            isGenerating={true}
-            onGenerate={handleGenerate}
-          />
-        </div>
-      )}
 
       {/* Generated Image Output */}
       {session.status === "complete" && session.generated_image_url && (
@@ -214,9 +258,21 @@ export default function Home() {
               className="w-full"
             />
           </div>
+
+          {session.explanation && (
+            <div className="border border-[var(--border)] bg-[var(--card)] p-6 space-y-3">
+              <label className="block text-xs tracking-widest text-[var(--accent)]">
+                YOUR ARTIFACT — EXPLAINED
+              </label>
+              <div className="text-sm text-[var(--foreground)] leading-relaxed whitespace-pre-wrap">
+                {session.explanation}
+              </div>
+            </div>
+          )}
+
           <button
             onClick={() => dispatch({ type: "RESET" })}
-            className="text-xs text-[var(--muted)] underline hover:text-[var(--accent)] transition-colors"
+            className="w-full border border-[var(--muted-strong)] text-[var(--muted-strong)] py-3 text-sm tracking-[0.3em] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors"
           >
             NEW SESSION
           </button>

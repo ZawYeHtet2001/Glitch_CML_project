@@ -5,28 +5,67 @@ import React from "react";
 
 const OPERATION_META: Record<
   OperationType,
-  { label: string; description: string }
+  { label: string; description: string; subtext: string }
 > = {
-  clarity: { label: "CLARITY", description: "Edge Resolution / Fidelity" },
+  clarity: {
+    label: "CLARITY",
+    description: "Boundary Diffusion",
+    subtext: "Dissolves edges — connected forms blur and merge into neighbours",
+  },
   completeness: {
     label: "COMPLETENESS",
-    description: "Subtraction / Missing Mass",
+    description: "Mass Subtraction",
+    subtext: "Carves away volume — scoops, voids, and hollows erode the form",
   },
   stability: {
     label: "STABILITY",
-    description: "Tilt / Center of Gravity",
+    description: "Gravitational Shift",
+    subtext: "Tilts and suspends — rotates the form off-axis, defying gravity",
   },
   misassociation: {
     label: "MISASSOCIATION",
-    description: "Collision / Hybridization",
+    description: "Cross-Morphology Fusion",
+    subtext: "Merges incompatible shapes — forces foreign forms into one body",
   },
   vulnerability: {
     label: "VULNERABILITY",
-    description: "Porosity / Shell Thickness",
+    description: "Interior Reveal",
+    subtext: "Peels open surfaces — exposes hidden inner layers and cavities",
   },
   intimacy: {
     label: "INTIMACY",
-    description: "Compression / Cavity Size",
+    description: "Scale Compression",
+    subtext: "Collapses space — surrounding mass folds inward, crushing scale",
+  },
+  temperature: {
+    label: "TEMPERATURE",
+    description: "Freeze ↔ Melt",
+    subtext: "Thermal state — low: ice/frost crystallisation, high: molten flow",
+  },
+  pressure: {
+    label: "PRESSURE",
+    description: "Smooth ↔ Shatter",
+    subtext: "Surface tension — low: glassy calm polish, high: jagged spikes",
+  },
+  luminosity: {
+    label: "LUMINOSITY",
+    description: "Shadow ↔ Radiance",
+    subtext: "Light intensity — low: consumed by darkness, high: blinding glow",
+  },
+  material: {
+    label: "MATERIAL",
+    description: "Substance Identity",
+    subtext: "What the sculpture is made from — connected keywords define the physical material",
+  },
+  texture: {
+    label: "TEXTURE",
+    description: "Surface Grain",
+    subtext: "Tactile quality — connected keywords set roughness, smoothness, grain",
+  },
+  color: {
+    label: "COLOR",
+    description: "Chromatic Palette",
+    subtext: "Color identity — connected keywords drive the palette and saturation",
   },
 };
 
@@ -36,13 +75,15 @@ interface OperationNodeProps {
   connectedCount: number;
   position: { x: number; y: number };
   isHovered: boolean;
+  isHighlighted: boolean;
   onPortPointerEnter: (id: OperationType) => void;
   onPortPointerLeave: () => void;
   onPortPointerUp: (id: OperationType) => void;
+  onSelect: (id: OperationType) => void;
 }
 
-export const OPERATION_WIDTH = 220;
-export const OPERATION_HEIGHT = 80;
+export const OPERATION_WIDTH = 240;
+export const OPERATION_HEIGHT = 90;
 export const OPERATION_PORT_RADIUS = 7;
 
 export default function OperationNode({
@@ -51,9 +92,11 @@ export default function OperationNode({
   connectedCount,
   position,
   isHovered,
+  isHighlighted,
   onPortPointerEnter,
   onPortPointerLeave,
   onPortPointerUp,
+  onSelect,
 }: OperationNodeProps) {
   const meta = OPERATION_META[id];
 
@@ -66,6 +109,10 @@ export default function OperationNode({
         width: OPERATION_WIDTH,
         height: OPERATION_HEIGHT,
         userSelect: "none",
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect(id);
       }}
     >
       {/* Input port (left edge) */}
@@ -96,14 +143,19 @@ export default function OperationNode({
           width: "100%",
           height: "100%",
           background: "var(--card)",
-          border: `1px solid ${isHovered ? "var(--accent)" : "var(--border)"}`,
+          border: `1px solid ${
+            isHovered || isHighlighted ? "var(--accent)" : "var(--border)"
+          }`,
           borderRadius: 4,
           padding: "8px 14px",
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          fontFamily: '"Courier New", monospace',
-          transition: "border-color 0.15s ease",
+          fontFamily: "var(--font-mono-stack)",
+          boxShadow: isHighlighted
+            ? "0 0 14px var(--accent), 0 0 4px var(--accent)"
+            : "none",
+          transition: "border-color 0.15s ease, box-shadow 0.18s ease",
         }}
       >
         {/* Header row */}
@@ -139,10 +191,16 @@ export default function OperationNode({
           )}
         </div>
 
-        {/* Description */}
-        <span style={{ color: "var(--muted)", fontSize: 10 }}>
-          {meta.description}
-        </span>
+        {/* Description + subtext */}
+        <div style={{ lineHeight: 1.3 }}>
+          <span style={{ color: "var(--foreground)", fontSize: 10, opacity: 0.7 }}>
+            {meta.description}
+          </span>
+          <br />
+          <span style={{ color: "var(--muted)", fontSize: 9 }}>
+            {meta.subtext}
+          </span>
+        </div>
 
         {/* Score bar */}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

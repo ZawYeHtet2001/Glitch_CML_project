@@ -6,6 +6,8 @@ interface InputFormProps {
   onSubmit: (subjectId: string, inputText: string) => void;
 }
 
+const MAX_INPUT_CHARS = 600;
+
 export default function InputForm({ onSubmit }: InputFormProps) {
   const [subjectId, setSubjectId] = useState("");
   const [inputText, setInputText] = useState("");
@@ -16,6 +18,9 @@ export default function InputForm({ onSubmit }: InputFormProps) {
       onSubmit(subjectId, inputText);
     }
   };
+
+  const charCount = inputText.length;
+  const overLimit = charCount > MAX_INPUT_CHARS;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
@@ -47,15 +52,27 @@ export default function InputForm({ onSubmit }: InputFormProps) {
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           rows={8}
-          placeholder="I remember a corridor that kept stretching longer as I walked. The walls were concrete but they felt soft, like skin. There was a door at the end but every time I reached for it..."
+          maxLength={MAX_INPUT_CHARS}
+          placeholder="I remember a corridor that kept stretching longer as I walked. The walls were concrete but they felt soft. There was a door at the end but every time I reached for it..."
           className="w-full bg-[var(--card)] border border-[var(--border)] p-4 text-sm text-[var(--foreground)] placeholder-[var(--muted)] focus:border-[var(--accent)] focus:outline-none resize-none"
         />
+        <div
+          className={`mt-2 text-xs tracking-widest text-right ${
+            overLimit
+              ? "text-red-400"
+              : charCount > MAX_INPUT_CHARS * 0.85
+                ? "text-[var(--accent)]"
+                : "text-[var(--muted)]"
+          }`}
+        >
+          {charCount} / {MAX_INPUT_CHARS} CHARS
+        </div>
       </div>
 
       {/* Submit */}
       <button
         type="submit"
-        disabled={!subjectId || !inputText}
+        disabled={!subjectId || !inputText || overLimit}
         className="w-full border border-[var(--accent)] text-[var(--accent)] py-3 text-sm tracking-[0.3em] hover:bg-[var(--accent)] hover:text-black transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
       >
         EXTRACT + ANALYZE

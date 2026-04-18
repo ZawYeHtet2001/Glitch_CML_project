@@ -14,6 +14,17 @@ export interface KeywordFragment {
   position: { x: number; y: number };
 }
 
+// --- Tone Archetype (starter shape from mood) ---
+
+export type ToneArchetype =
+  | "organic"
+  | "crystalline"
+  | "twisted"
+  | "skeletal"
+  | "monolithic"
+  | "fragmented"
+  | "nested";
+
 // --- Operation Nodes (6 Parameters) ---
 
 export type OperationType =
@@ -22,7 +33,13 @@ export type OperationType =
   | "stability"
   | "misassociation"
   | "vulnerability"
-  | "intimacy";
+  | "intimacy"
+  | "temperature"
+  | "pressure"
+  | "luminosity"
+  | "material"
+  | "texture"
+  | "color";
 
 export interface OperationNode {
   id: OperationType;
@@ -47,6 +64,7 @@ export interface SubconsciousAnalysis {
   subject_id: string;
   keywords: KeywordFragment[];
   scores: Record<OperationType, number>;
+  tone_archetype: ToneArchetype;
   interpretation: string;
 }
 
@@ -61,6 +79,16 @@ export interface CanvasState {
     mousePos: { x: number; y: number };
   } | null;
 }
+
+// --- Image Models ---
+
+export type ImageModel = "ideogram" | "recraft" | "nanoBanana";
+
+export const IMAGE_MODEL_LABELS: Record<ImageModel, string> = {
+  ideogram: "Ideogram V2",
+  recraft: "Recraft V4 Pro",
+  nanoBanana: "Nano Banana Pro",
+};
 
 // --- Session ---
 
@@ -78,6 +106,7 @@ export interface SessionData {
   analysis?: SubconsciousAnalysis;
   canvas?: CanvasState;
   generated_image_url?: string;
+  explanation?: string;
   status: SessionStatus;
   error?: string;
 }

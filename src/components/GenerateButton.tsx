@@ -5,12 +5,14 @@ import React from "react";
 interface GenerateButtonProps {
   connectionCount: number;
   isGenerating: boolean;
+  hasPreviousResult?: boolean;
   onGenerate: () => void;
 }
 
 export default function GenerateButton({
   connectionCount,
   isGenerating,
+  hasPreviousResult = false,
   onGenerate,
 }: GenerateButtonProps) {
   const disabled = connectionCount === 0 || isGenerating;
@@ -26,7 +28,7 @@ export default function GenerateButton({
         border: `1px solid ${disabled ? "var(--border)" : "var(--accent)"}`,
         borderRadius: 4,
         color: disabled ? "var(--muted)" : "var(--accent)",
-        fontFamily: '"Courier New", monospace',
+        fontFamily: "var(--font-mono-stack)",
         fontSize: 13,
         letterSpacing: "0.2em",
         cursor: disabled ? "not-allowed" : "pointer",
@@ -37,7 +39,7 @@ export default function GenerateButton({
       {isGenerating
         ? "GENERATING..."
         : connectionCount > 0
-          ? `GENERATE IMAGE — ${connectionCount} CONNECTION${connectionCount !== 1 ? "S" : ""}`
+          ? `${hasPreviousResult ? "REGENERATE" : "GENERATE IMAGE"} — ${connectionCount} CONNECTION${connectionCount !== 1 ? "S" : ""}`
           : "CONNECT KEYWORDS TO OPERATIONS TO GENERATE"}
     </button>
   );
