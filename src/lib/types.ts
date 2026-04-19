@@ -90,6 +90,15 @@ export const IMAGE_MODEL_LABELS: Record<ImageModel, string> = {
   nanoBanana: "Nano Banana Pro",
 };
 
+// --- 3D Models ---
+
+export type Model3D = "trellis" | "hunyuan3d";
+
+export const MODEL_3D_LABELS: Record<Model3D, string> = {
+  trellis: "Trellis (Fast)",
+  hunyuan3d: "Hunyuan3D V3 (HQ)",
+};
+
 // --- Session ---
 
 export type SessionStatus =
@@ -98,6 +107,8 @@ export type SessionStatus =
   | "mapping"
   | "generating"
   | "complete"
+  | "generating_3d"
+  | "complete_3d"
   | "error";
 
 export interface SessionData {
@@ -106,7 +117,9 @@ export interface SessionData {
   analysis?: SubconsciousAnalysis;
   canvas?: CanvasState;
   generated_image_url?: string;
+  artifact_name?: string;
   explanation?: string;
+  model_3d_url?: string;
   status: SessionStatus;
   error?: string;
 }

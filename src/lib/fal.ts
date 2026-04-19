@@ -1,5 +1,5 @@
 import { fal } from "@fal-ai/client";
-import type { ImageModel } from "./types";
+import type { ImageModel, Model3D } from "./types";
 
 fal.config({
   credentials: process.env.FAL_KEY,
@@ -98,6 +98,48 @@ export async function generateImageWithReference(
 
   const output = result.data as { images: { url: string }[] };
   return output.images[0].url;
+}
+
+// --- Image to 3D: Trellis (Microsoft) ---
+// Cheap (~$0.02), fast, preserves input form fidelity.
+
+async function generate3DTrellis(imageUrl: string): Promise<string> {
+  const result = await fal.subscribe("fal-ai/trellis", {
+    input: {
+      image_url: imageUrl,
+    },
+  });
+  const output = result.data as { model_mesh: { url: string } };
+  return output.model_mesh.url;
+}
+
+// --- Image to 3D: Hunyuan3D V3 (Tencent) ---
+// Higher quality with PBR materials, returns multiple format URLs.
+
+async function generate3DHunyuan(imageUrl: string): Promise<string> {
+  const result = await fal.subscribe("fal-ai/hunyuan3d-v3/image-to-3d", {
+    input: {
+      input_image_url: imageUrl,
+      enable_pbr: true,
+      generate_type: "Normal",
+      face_count: 500000,
+    },
+  });
+  const output = result.data as { model_glb: { url: string } };
+  return output.model_glb.url;
+}
+
+export async function generate3DModel(
+  imageUrl: string,
+  model: Model3D = "trellis"
+): Promise<string> {
+  switch (model) {
+    case "hunyuan3d":
+      return generate3DHunyuan(imageUrl);
+    case "trellis":
+    default:
+      return generate3DTrellis(imageUrl);
+  }
 }
 
 export async function generateVideo(

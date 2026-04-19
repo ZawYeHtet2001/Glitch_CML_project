@@ -43,7 +43,8 @@ export default function ConnectionWire({
         stroke="var(--accent)"
         strokeWidth={isSelected ? 2 : 1.5}
         strokeOpacity={isActive ? 0.4 : isSelected ? 1 : 0.6}
-        strokeDasharray={isActive ? "6 4" : "none"}
+        strokeDasharray={isActive ? "6 4" : undefined}
+        className={!isActive ? "wire-draw-in" : undefined}
         style={{ pointerEvents: "none" }}
       />
     </>

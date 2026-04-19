@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import { useKonamiCode } from "@/hooks/useKonamiCode";
 
 interface InputFormProps {
   onSubmit: (subjectId: string, inputText: string) => void;
@@ -8,9 +9,22 @@ interface InputFormProps {
 
 const MAX_INPUT_CHARS = 600;
 
+const DEV_RECALL_TEXT =
+  "My grandfather's workshop in winter, 1997. Sawdust on concrete, the smell of cold steel and linseed oil. A single bare bulb hung from a cord and cast long shadows across the lathe. I was seven and stood in the doorway because my hands always froze up there. The radio played on a shelf missing the bass knob. Through the small square window, snow was piling against the garage door. He was turning something on the lathe — I never saw what, the wood curls kept falling to the floor like gold peels.";
+
 export default function InputForm({ onSubmit }: InputFormProps) {
   const [subjectId, setSubjectId] = useState("");
   const [inputText, setInputText] = useState("");
+  const [easterEggFired, setEasterEggFired] = useState(false);
+
+  useKonamiCode(
+    useCallback(() => {
+      setSubjectId("DEV");
+      setInputText(DEV_RECALL_TEXT);
+      setEasterEggFired(true);
+      setTimeout(() => setEasterEggFired(false), 2400);
+    }, [])
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +37,26 @@ export default function InputForm({ onSubmit }: InputFormProps) {
   const overLimit = charCount > MAX_INPUT_CHARS;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
+    <form onSubmit={handleSubmit} className="space-y-8 relative">
+      {easterEggFired && (
+        <div
+          aria-live="polite"
+          style={{
+            position: "absolute",
+            top: -36,
+            right: 0,
+            fontFamily: "var(--font-mono-stack)",
+            fontSize: 10,
+            letterSpacing: "0.2em",
+            color: "var(--accent)",
+            border: "1px solid var(--accent)",
+            padding: "4px 10px",
+            background: "rgba(232, 184, 74, 0.08)",
+          }}
+        >
+          ◉ DEVELOPER RECALL LOADED
+        </div>
+      )}
       {/* Subject ID */}
       <div>
         <label className="block text-xs tracking-widest text-[var(--muted)] mb-2">

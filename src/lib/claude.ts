@@ -224,14 +224,31 @@ You will be given:
 - The connections they chose (which words they linked to which shape operations)
 - The prompt that was used to generate the image
 
-Write a short, warm explanation (2-3 paragraphs, roughly 120-180 words) that helps the person understand what happened — how their words became this sculpture. Speak directly to them using "your" and "you."
+You must produce TWO things:
 
-Cover these naturally (don't use headers or bullet points):
+1. A NAME for the artifact — short, evocative, personal. Like a title a museum curator would give a piece. Rules:
+   - 2 to 5 words
+   - Title Case
+   - Must feel intimate and specific to THIS memory (draw from the person's own imagery — a specific object, a sensation, a place)
+   - Poetic but grounded — not abstract philosophy, not a generic mood label
+   - No quotation marks, no punctuation (no period, no colon, no dash)
+   - Good examples: "The Cedar Chest", "Fluorescent Afternoon", "My Mother's Watch", "The Glass Door"
+   - Bad examples: "Nostalgia", "Memory #1", "An Exploration of Loss", "Sculpture One"
+
+2. An EXPLANATION — a short, warm paragraph (2-3 paragraphs, roughly 120-180 words) that helps the person understand what happened — how their words became this sculpture. Speak directly to them using "your" and "you."
+
+Cover these naturally in the explanation (don't use headers or bullet points):
 - What feeling or mood the machine picked up from their writing, and how that shaped the starting form
 - What their specific connections did — explain each operation in plain language (e.g. "you connected 'water' to Material, so the sculpture looks like it's made of water" rather than "the material operation with score 0.72 produced...")
 - What the final sculpture represents as a whole — tie it back to their original memory
 
-Tone: conversational, thoughtful, accessible. Like a museum guide speaking to a visitor, not an academic paper. No jargon, no scores, no technical parameter names. Use the actual words from their writing. No preamble, no headers, no markdown — plain prose only.`;
+Tone: conversational, thoughtful, accessible. Like a museum guide speaking to a visitor, not an academic paper. No jargon, no scores, no technical parameter names. Use the actual words from their writing.
+
+Respond in valid JSON only, no prose outside the JSON:
+{
+  "name": string,
+  "explanation": string
+}`;
 
 interface ExplanationInput {
   inputText: string;
@@ -247,7 +264,7 @@ export async function explainArtifact({
   connections,
   operations,
   prompt,
-}: ExplanationInput): Promise<string> {
+}: ExplanationInput): Promise<{ name: string; explanation: string }> {
   const keywordMap = new Map(analysis.keywords.map((k) => [k.id, k]));
   // Plain-language operation descriptions for the explanation
   const OP_PLAIN: Record<string, string> = {
@@ -298,10 +315,21 @@ Write the explanation for the person.`;
 
   const response = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 600,
+    max_tokens: 800,
     system: EXPLANATION_SYSTEM_PROMPT,
     messages: [{ role: "user", content: userMessage }],
   });
 
-  return response.content[0].type === "text" ? response.content[0].text : "";
+  const text =
+    response.content[0].type === "text" ? response.content[0].text : "";
+  try {
+    const parsed = JSON.parse(extractJSON(text));
+    return {
+      name: typeof parsed.name === "string" ? parsed.name : "Untitled Artifact",
+      explanation:
+        typeof parsed.explanation === "string" ? parsed.explanation : "",
+    };
+  } catch {
+    return { name: "Untitled Artifact", explanation: text };
+  }
 }

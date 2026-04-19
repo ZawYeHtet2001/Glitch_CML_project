@@ -139,12 +139,21 @@ export default function OperationNode({
 
       {/* Node body */}
       <div
+        className={
+          connectedCount > 0 && !isHighlighted && !isHovered
+            ? "node-connected-breath"
+            : undefined
+        }
         style={{
           width: "100%",
           height: "100%",
           background: "var(--card)",
           border: `1px solid ${
-            isHovered || isHighlighted ? "var(--accent)" : "var(--border)"
+            isHovered || isHighlighted
+              ? "var(--accent)"
+              : connectedCount > 0
+                ? "rgba(232, 184, 74, 0.55)"
+                : "var(--border)"
           }`,
           borderRadius: 4,
           padding: "8px 14px",
@@ -178,12 +187,15 @@ export default function OperationNode({
           </span>
           {connectedCount > 0 && (
             <span
+              key={connectedCount}
+              className="badge-pop"
               style={{
                 color: "var(--accent)",
                 fontSize: 10,
                 background: "rgba(212, 160, 23, 0.15)",
                 padding: "1px 6px",
                 borderRadius: 3,
+                fontVariantNumeric: "tabular-nums",
               }}
             >
               {connectedCount}

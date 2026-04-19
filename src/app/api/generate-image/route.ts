@@ -85,21 +85,24 @@ export async function POST(request: Request) {
     url = await generateImage(prompt, imageModel, wantsBlack);
   }
 
-  // Step 4: Best-effort analytical explanation
+  // Step 4: Best-effort naming + analytical explanation
   let explanation = "";
+  let name = "";
   if (analysis && inputText) {
     try {
-      explanation = await explainArtifact({
+      const result = await explainArtifact({
         inputText,
         analysis,
         connections,
         operations,
         prompt,
       });
+      name = result.name;
+      explanation = result.explanation;
     } catch (e) {
       console.error("explainArtifact failed:", e);
     }
   }
 
-  return NextResponse.json({ url, prompt, explanation });
+  return NextResponse.json({ url, prompt, name, explanation });
 }
