@@ -24,7 +24,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **3D Exports:** GLB (native from fal), OBJ + STL (client-side via `three-stdlib` exporters)
 - **API Keys:** Stored in `.env.local` (gitignored)
 
-## Pipeline (v2.4 — Full 2D→3D loop + mechanical/subconscious UI)
+## Pipeline (v2.5 — CRT phosphor UI, hardened fal + Anthropic clients)
 
 1. **Input** — User provides subject ID + subconsciousness text (600-char limit)
 2. **Analysis** — Claude extracts 8-15 keywords + scores 12 parameters + classifies tone archetype (`/api/analyze`)
@@ -80,14 +80,38 @@ Reference images for each archetype stored in `public/archetypes/`.
 | Texture | Surface Grain | Connected keywords set roughness/smoothness |
 | Color | Chromatic Palette | Connected keywords drive palette and saturation |
 
-## UI Theme — Mechanical / Subconscious Duality
+## UI Theme — Retro CRT terminal (v2.5 lean machine)
 
-Two-state identity drives all animation decisions:
+A single cohesive retro-computing aesthetic. The heavy bone-chassis / physical-machine chrome was removed in v2.5 to free GPU memory after `THREE.WebGLRenderer: Context Lost` errors on long sessions.
 
-- **ACTIVE (input/mapping/generating):** Mechanical, precise, robotic. Scan bars, elapsed counters, telemetry glyphs, wire draw-in, badge pop, connected-node breath. EB Garamond serif for artifact name (museum-label feel).
-- **IDLE (input screen only, ≥12s no input):** Subconscious decay. Random letter-fall on headings, gold scan line sweep, periodic TV glitch (chromatic aberration + jitter + tear bar), one-time deep glitch burst at 35s. All effects halt immediately on input and are gated to `session.status === "input"` only.
+- **Chrome:** Two thin 32px horizontal bars — top shows `INTERACTIVE MEMORY MACHINE · IMM-0497 · v2.4 · CH.01` + PWR/TX/RCV LED trio. Bottom shows team/models + `5V/2.1A · COOL 41°C · T+elapsed`. All amber phosphor on a near-black strip with a thin amber hairline border.
+- **Viewports:** Thin 1px amber border, transparent background, small amber `machine-viewport-label` tab on top-left and `machine-viewport-id` + LED on top-right. No bone bezel, no chamfered corners, no chrome screws.
+- **CRT inner (phosphor panels):** `.viewport-inner` — recessed dark warm-amber radial gradient + horizontal scanlines at 4px step + slow beam sweep. VT323 amber phosphor text with glow. Used for: SUBJECT readout, SUBCONSCIOUS RECALL log, INTERPRETATION, loader.
+- **Non-CRT panels:** ARTIFACT / 2D uses `crt={false} chamber={false}` for a crisp black-matte frame; ARTIFACT / 3D uses `crt={false} chamber={false}` with an inner dark panel (var(--background)) so yesterday's Model3DViewer runs on its original dark canvas.
+- **Idle (input screen only, ≥12s no input):** letter-fall, gold scan sweep, periodic TV glitch, 35s deep burst. Gated to `session.status === "input"`.
+- **Fonts:** VT323 (CRT phosphor text), Share Tech Mono (stencil labels), JetBrains Mono (data), EB Garamond (italic artifact name).
+- **Film grain** SVG overlay ~5% opacity, no mix-blend-mode.
 
-Film-grain SVG overlay (~6% opacity) is always on, even during active states.
+## Performance hardening (v2.5)
+
+A night of WebGL context loss + CPU 70% on hunyuan view led to these cuts:
+
+- `Model3DViewer`: listens for `webglcontextlost` → auto-remounts Canvas with new key after 300ms.
+- Canvas `dpr` dropped from `[1, 2]` → `[1, 1.5]`; `failIfMajorPerformanceCaveat: false`.
+- LED pulse animates `opacity` only (GPU composite), not `box-shadow` (CPU paint).
+- `node-connected-breath` is a static glow now, no animated box-shadow.
+- GrainOverlay: no `mix-blend-mode` — plain `opacity: 0.05`.
+- Scanline overlays: plain `rgba` stripes (no `mix-blend-mode: multiply`) at 4px step.
+- `MechanicalLoader`: elapsed 250ms, noise 320ms (was 100ms/140ms).
+- `ChassisFrame`: telemetry values updated via `useRef` + `textContent` — no React re-renders per tick.
+- Removed: matrix-rain columns, running ticker scroll, bone corner plates, side rails with knobs, speaker grille, arcade button pad, vents, rivets.
+- `@media (prefers-reduced-motion: reduce)` disables remaining decorative animations.
+
+## Resilience (v2.5)
+
+- **Anthropic client:** `timeout: 30_000`, `maxRetries: 1` — fails fast on transient 429/529s instead of silently retrying for 10min.
+- **fal client:** `withTimeout()` wrapper caps trellis at 6min, hunyuan at 10min. `logs: true` + `onQueueUpdate` streams fal queue status to Next.js terminal. Hunyuan uses `generate_type: "Normal"` (valid enum) + `face_count: 500000` (matches teammates' 3D-print quality).
+- Full-screen chassis now `z-index: 50` (above `<main>` at `z-index: 10`) so scrolling content is masked by the thin top/bottom strips.
 
 ## Easter Eggs
 
@@ -98,12 +122,14 @@ Film-grain SVG overlay (~6% opacity) is always on, even during active states.
 ## Key Files
 
 - `src/lib/types.ts` — TypeScript interfaces (KeywordFragment, OperationNode, Connection, SubconsciousAnalysis, ToneArchetype, ImageModel, Model3D, CanvasState, SessionData incl. artifact_name + model_3d_url)
-- `src/lib/claude.ts` — Claude API: analysis, art director prompt, `explainArtifact` returns `{ name, explanation }`
+- `src/lib/claude.ts` — Claude API: analysis, art director prompt, `explainArtifact` returns `{ name, explanation }`. Client has `timeout: 30_000`, `maxRetries: 1`.
 - `src/lib/prompt-builder.ts` — Builds mechanical prompt from connections + scores + archetype
-- `src/lib/fal.ts` — fal.ai client: Recraft V4 Pro, Nano Banana Pro, Ideogram V2, remix, Trellis, Hunyuan3D V3
-- `src/app/layout.tsx` — Loads fonts (JetBrains Mono, Inter, EB Garamond) + renders GrainOverlay
-- `src/app/page.tsx` — Main page: useReducer state, idle detection gated to input screen, mechanical loader, midnight-mode subtitle, TV glitch scheduler
-- `src/app/globals.css` — All keyframes (glitch-fall, idle-scan, tv-glitch-content, tv-glitch-content-deep, tv-tear, scan-bar, wire-draw, node-breath, badge-pop)
+- `src/lib/fal.ts` — fal.ai client: Recraft V4 Pro, Nano Banana Pro, Ideogram V2, remix, Trellis, Hunyuan3D V3. `withTimeout` wrapper + `logs: true` + `onQueueUpdate` for all 3D calls.
+- `src/app/layout.tsx` — Loads fonts (JetBrains Mono, Inter, EB Garamond, Share Tech Mono, VT323) + renders ChassisFrame + GrainOverlay
+- `src/app/page.tsx` — Main page: useReducer state, idle detection gated to input screen, mechanical loader, midnight-mode subtitle, TV glitch scheduler. Content in `<main>` with padding 56/32/64/32 so thin chassis bars don't overlap.
+- `src/app/globals.css` — Keyframes + machine classes (viewport, CRT scanlines, phosphor, serial log, wire-draw 3000px dasharray, led pulse opacity-only, prefers-reduced-motion overrides).
+- `src/components/ChassisFrame.tsx` — **Lean v2.5**: two thin 32px top/bottom bars with IMM ID + LEDs + telemetry. Telemetry via `useRef + textContent` (no re-renders).
+- `src/components/MachineViewport.tsx` — Thin amber-border viewport wrapper with `crt` / `chamber` / `phosphor` prop switches for CRT-phosphor / dark-chamber / flat modes.
 - `src/app/api/analyze/` — Claude analysis endpoint
 - `src/app/api/generate-image/` — Art director + image generation + naming endpoint
 - `src/app/api/generate-3d/` — fal.ai Trellis / Hunyuan3D reconstruction endpoint
@@ -134,7 +160,8 @@ npm run build        # Production build
 - **2026-04-18/19:** v2.2 — Art director pipeline, 12 nodes, tone archetypes with reference images, multi-model 2D.
 - **2026-04-20 (v2.3):** Full 3D pipeline shipped. Trellis/Hunyuan3D via fal.ai, R3F viewer with lighting toggle, GLB/OBJ/STL export, editable artifact names. Teammates already 3D-printed outputs.
 - **2026-04-20 (v2.4):** UI polish pass — idle/subconscious glitch effects (letter fall, scan line, TV glitch, deep burst), mechanical loaders (elapsed counter + scan bar + telemetry), node canvas polish (wire draw-in, breath glow, badge pop), 3D viewport grid + axis gizmo, EB Garamond serif, film grain overlay, easter eggs (Konami / midnight mode).
-- **Next:** Final crit Tuesday 2026-04-21 evening. Monday night = last polish + demo rehearsal. No new features after that window.
+- **2026-04-21 (v2.5 — crit-night):** Full retro-CRT aesthetic pass. Added VT323 + Share Tech Mono fonts, amber phosphor treatment, scanline overlays, cryptic serial-log cycling in loader, ASCII progress bar, tactile buttons with LED indicators, terminal-style input prompts. Hardened Anthropic and fal clients with timeouts + retry caps after hung 3D call. Iterated through heavy bone-chassis look, then stripped it back to a lean two-bar chrome after WebGL context-loss issues — kept all CRT effects and fonts intact. Added WebGL context-loss auto-recovery. Production build green, TypeScript clean. **Shipped final for crit.**
+- **Crit:** Tuesday 2026-04-21 evening.
 
 ## Workflow Guidelines
 

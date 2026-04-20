@@ -15,6 +15,36 @@
     "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-serif-stack: var(--font-serif), "EB Garamond", "Cormorant Garamond",
     Garamond, Georgia, "Times New Roman", serif;
+  --font-tech-stack: var(--font-tech), "Share Tech Mono", "Courier New",
+    monospace;
+  --font-matrix-stack: var(--font-matrix), "VT323", "Courier New", monospace;
+
+  /* Bone/cream machine chassis palette — matches retro workstation refs */
+  --chassis-bone: #d7ccb4;
+  --chassis-bone-hi: #ece3cd;
+  --chassis-bone-lo: #a9a089;
+  --chassis-bone-deep: #6a6151;
+  --chassis-seam: #3b352b;
+  --chassis-ink: #2b2721;
+  --chassis-shadow: rgba(0, 0, 0, 0.55);
+
+  /* CRT screen — deep amber phosphor */
+  --crt-bg: #120a02;
+  --crt-bg-hi: #1d1003;
+  --amber-phosphor: #ffb347;
+  --amber-phosphor-hot: #ffd98a;
+  --amber-phosphor-dim: rgba(255, 179, 71, 0.45);
+  --amber-glow: 0 0 6px rgba(255, 179, 71, 0.7), 0 0 14px rgba(255, 110, 0, 0.35);
+
+  /* Secondary green phosphor — for matrix rain accent only */
+  --phosphor: #7bff9a;
+  --phosphor-dim: rgba(123, 255, 154, 0.55);
+  --phosphor-glow: 0 0 6px rgba(123, 255, 154, 0.65);
+
+  --led-red: #ff5a5a;
+  --led-amber: #ffb347;
+  --led-green: #6ccf7f;
+  --led-teal: #4cc9d4;
 }
 
 body {
@@ -70,26 +100,23 @@ label,
   100% { transform: translateX(500%); }
 }
 
-/* Wire draw-in animation (new connections sweep from source to target) */
+/* Wire draw-in animation (new connections sweep from source to target).
+   Dasharray must be larger than the longest possible wire path so no gap
+   appears at the end of long diagonal wires on wide viewports. */
 @keyframes wire-draw {
-  0%   { stroke-dashoffset: 800; opacity: 0.15; }
+  0%   { stroke-dashoffset: 3000; opacity: 0.15; }
   40%  { opacity: 1; }
   100% { stroke-dashoffset: 0; opacity: 1; }
 }
 
 .wire-draw-in {
-  stroke-dasharray: 800;
-  animation: wire-draw 0.45s cubic-bezier(0.55, 0.08, 0.25, 1) forwards;
+  stroke-dasharray: 3000;
+  animation: wire-draw 0.55s cubic-bezier(0.55, 0.08, 0.25, 1) forwards;
 }
 
-/* Subtle mechanical breathing for nodes that currently have connections */
-@keyframes node-breath {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(232, 184, 74, 0); }
-  50%      { box-shadow: 0 0 6px 1px rgba(232, 184, 74, 0.25); }
-}
-
+/* Static glow for connected nodes — no animated box-shadow (repaint-heavy). */
 .node-connected-breath {
-  animation: node-breath 3.2s ease-in-out infinite;
+  box-shadow: 0 0 6px 1px rgba(232, 184, 74, 0.22);
 }
 
 /* Count badge pulse when a new connection is added */
@@ -228,4 +255,736 @@ body.tv-glitch::before {
   pointer-events: none;
   animation: tv-tear 0.55s steps(10, end) forwards;
   transform-origin: center;
+}
+
+/* ==========================================================================
+   MACHINE CHASSIS AESTHETIC — bone-chassis workstation, amber CRT phosphor
+   ========================================================================== */
+
+.font-tech   { font-family: var(--font-tech-stack);   letter-spacing: 0.08em; }
+.font-matrix { font-family: var(--font-matrix-stack); letter-spacing: 0.02em; }
+.font-pixel  { font-family: var(--font-matrix-stack); letter-spacing: 0.05em; font-size: 1.15em; }
+
+.phosphor {
+  color: var(--amber-phosphor);
+  text-shadow: var(--amber-glow);
+  font-family: var(--font-matrix-stack);
+}
+.phosphor-dim {
+  color: var(--amber-phosphor-dim);
+  text-shadow: 0 0 3px rgba(255, 179, 71, 0.35);
+  font-family: var(--font-matrix-stack);
+}
+.phosphor-green {
+  color: var(--phosphor);
+  text-shadow: var(--phosphor-glow);
+  font-family: var(--font-matrix-stack);
+}
+
+/* ==========================================================================
+   OUTER CHASSIS — the bone-colored workstation shell that wraps the screen
+   ========================================================================== */
+
+body {
+  background:
+    radial-gradient(ellipse at top, #2b241b 0%, #0a0805 55%, #040302 100%);
+}
+
+.chassis-frame {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50; /* above scrolling page content so edges are masked */
+}
+.chassis-frame > * { pointer-events: none; }
+
+/* Shared bone-metal background used on all chassis panels */
+.chassis-bone {
+  background:
+    linear-gradient(180deg,
+      var(--chassis-bone-hi) 0%,
+      var(--chassis-bone) 45%,
+      var(--chassis-bone-lo) 100%);
+  border: 1px solid var(--chassis-seam);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.35),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.35),
+    0 2px 4px rgba(0, 0, 0, 0.55);
+}
+
+/* Top band — must end exactly where main padding-top begins (130px) so
+   no content bleeds through the gap. Height = 120px + 10px top offset = 130. */
+.chassis-band-top {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 120px;
+  padding: 14px 22px 14px 72px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  border-radius: 0;
+}
+
+/* Bottom band — must start exactly where main padding-bottom begins (140px). */
+.chassis-band-bottom {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 130px;
+  padding: 14px 22px 14px 72px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  border-radius: 0;
+}
+
+/* Rails fill the full gap between top and bottom bands with NO seams. */
+.chassis-rail {
+  position: absolute;
+  top: 120px;
+  bottom: 130px;
+  width: 60px;
+  padding: 14px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  border-radius: 0;
+}
+.chassis-rail-left  { left: 0; }
+.chassis-rail-right { right: 0; }
+
+/* ---- Chassis furniture ---- */
+
+/* Round knob — looks like a physical dial */
+.knob {
+  position: relative;
+  width: 46px; height: 46px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, #3a3329 0%, #1b1712 45%, #0a0906 100%);
+  box-shadow:
+    inset 0 2px 3px rgba(255,255,255,0.25),
+    inset 0 -3px 4px rgba(0,0,0,0.8),
+    0 2px 4px rgba(0,0,0,0.6),
+    0 0 0 2px var(--chassis-bone-lo);
+}
+.knob::after {
+  /* indicator line */
+  content: "";
+  position: absolute;
+  top: 4px; left: 50%;
+  width: 3px; height: 12px;
+  background: var(--chassis-bone-hi);
+  border-radius: 2px;
+  transform: translateX(-50%);
+  box-shadow: 0 0 3px rgba(255, 179, 71, 0.8);
+}
+.knob.knob-sm { width: 28px; height: 28px; }
+.knob.knob-sm::after { top: 2px; width: 2px; height: 8px; }
+
+/* Speaker/intake grille — hexagonal perforation look */
+.grille {
+  background:
+    radial-gradient(circle at center, #2a241c 1.2px, transparent 1.6px) 0 0 / 7px 7px,
+    linear-gradient(180deg, #1d1813, #121014);
+  background-blend-mode: normal;
+  border: 1px solid var(--chassis-seam);
+  box-shadow:
+    inset 1px 1px 2px rgba(0,0,0,0.7),
+    inset 0 0 8px rgba(0,0,0,0.6);
+  image-rendering: pixelated;
+}
+
+/* Orange accent grille (like the Y1-Y5 speaker area in ref 1) */
+.grille-amber {
+  background:
+    radial-gradient(circle at center, #301d06 1.2px, transparent 1.6px) 0 0 / 7px 7px,
+    linear-gradient(180deg, #c26e15, #6b3b08);
+  border: 1px solid #3f2808;
+  box-shadow:
+    inset 1px 1px 2px rgba(0,0,0,0.5),
+    inset 0 0 6px rgba(0,0,0,0.35);
+}
+
+/* Vent slots (long horizontal dark cuts) */
+.vent-slots {
+  display: grid;
+  gap: 3px;
+}
+.vent-slots > span {
+  display: block;
+  height: 3px;
+  background: linear-gradient(to bottom, #0e0c08, #24201a);
+  border-top: 1px solid rgba(0,0,0,0.8);
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+}
+
+/* Rivet — recessed screw on bone metal */
+.rivet {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 35%, #f0e7d0 0%, #7a7164 50%, #332e25 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(0,0,0,0.45),
+    0 1px 0 rgba(255,255,255,0.4);
+  flex-shrink: 0;
+}
+
+/* Stencil label — black ink on bone metal */
+.stencil {
+  font-family: var(--font-tech-stack);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  color: var(--chassis-ink);
+  text-transform: uppercase;
+  line-height: 1.15;
+}
+.stencil-big {
+  font-family: var(--font-tech-stack);
+  font-size: 22px;
+  letter-spacing: 0.18em;
+  color: var(--chassis-ink);
+  text-transform: uppercase;
+  line-height: 1;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+}
+
+/* Pixel mini-display embedded in the chassis (like the meters in ref 1) */
+.mini-display {
+  background: #0a0603;
+  border: 1px solid var(--chassis-seam);
+  box-shadow:
+    inset 1px 1px 2px rgba(0,0,0,0.85),
+    inset 0 0 8px rgba(0,0,0,0.6),
+    0 0 0 1px rgba(255,255,255,0.25);
+  padding: 4px 8px;
+  font-family: var(--font-matrix-stack);
+  color: var(--amber-phosphor);
+  text-shadow: var(--amber-glow);
+  font-size: 14px;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  min-width: 70px;
+}
+
+/* Arcade square button (the red/teal buttons in ref 1) */
+.arcade-btn {
+  width: 30px; height: 30px;
+  border-radius: 4px;
+  border: 1px solid var(--chassis-seam);
+  box-shadow:
+    inset 1px 1px 2px rgba(255,255,255,0.35),
+    inset -1px -1px 2px rgba(0,0,0,0.45),
+    0 2px 3px rgba(0,0,0,0.55);
+  cursor: pointer;
+  transition: transform 80ms, box-shadow 80ms;
+}
+.arcade-btn:active {
+  transform: translateY(2px);
+  box-shadow: inset 0 2px 3px rgba(0,0,0,0.6);
+}
+.arcade-btn.red    { background: linear-gradient(180deg, #ff7a6b, #c83125); }
+.arcade-btn.teal   { background: linear-gradient(180deg, #7be8f0, #3596a2); }
+.arcade-btn.amber  { background: linear-gradient(180deg, #ffd280, #b76e0a); }
+.arcade-btn.grey   { background: linear-gradient(180deg, #b8afa0, #6d6558); }
+
+/* ==========================================================================
+   CRT SCREEN — amber phosphor recessed monitor with scanlines
+   ========================================================================== */
+
+.crt-screen {
+  position: relative;
+  background:
+    radial-gradient(ellipse at 50% 40%, #241505 0%, var(--crt-bg) 65%, #050301 100%);
+  border-radius: 10px;
+  border: 1px solid #0a0602;
+  box-shadow:
+    inset 0 0 0 2px rgba(0, 0, 0, 0.8),
+    inset 0 0 60px rgba(0, 0, 0, 0.8),
+    inset 0 0 16px rgba(255, 110, 0, 0.18),
+    0 2px 4px rgba(0, 0, 0, 0.9);
+  overflow: hidden;
+}
+
+/* Horizontal scanline overlay — subtle, repeating every 4px.
+   Plain rgba (no mix-blend-mode) — cheaper GPU compositing. */
+.crt-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0) 0,
+      rgba(0, 0, 0, 0) 3px,
+      rgba(0, 0, 0, 0.28) 4px
+    );
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Slow sweep — simulates the beam repainting the phosphor */
+@keyframes crt-sweep {
+  0%   { transform: translateY(-10%); opacity: 0; }
+  15%  { opacity: 0.25; }
+  85%  { opacity: 0.25; }
+  100% { transform: translateY(110%); opacity: 0; }
+}
+.crt-screen::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0;
+  height: 14%;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgba(255, 179, 71, 0.1) 50%,
+    transparent);
+  pointer-events: none;
+  animation: crt-sweep 12s linear infinite;
+  will-change: transform;
+  z-index: 3;
+}
+
+/* Content inside a CRT gets phosphor treatment by default */
+.crt-screen .crt-inner {
+  position: relative;
+  z-index: 1;
+  color: var(--amber-phosphor);
+  font-family: var(--font-matrix-stack);
+  text-shadow: 0 0 4px rgba(255, 179, 71, 0.55);
+}
+
+/* Amber-phosphor override helpers (stack-compatible) */
+.crt-amber {
+  color: var(--amber-phosphor) !important;
+  text-shadow: var(--amber-glow) !important;
+}
+.crt-amber-dim {
+  color: var(--amber-phosphor-dim) !important;
+  text-shadow: 0 0 3px rgba(255, 179, 71, 0.35);
+}
+
+/* ==========================================================================
+   MACHINE VIEWPORT — framing around each CRT panel
+   ========================================================================== */
+
+/* Lean viewport — thin amber border, no bone bezel. */
+.machine-viewport {
+  position: relative;
+  padding: 0;
+  background: transparent;
+  border: 1px solid rgba(255, 179, 71, 0.35);
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+}
+
+.machine-viewport-label {
+  position: absolute;
+  top: -9px;
+  left: 14px;
+  padding: 1px 8px;
+  font-family: var(--font-matrix-stack);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  color: var(--amber-phosphor);
+  background: var(--background);
+  text-transform: uppercase;
+  pointer-events: none;
+  z-index: 4;
+  text-shadow: var(--amber-glow);
+}
+
+.machine-viewport-id {
+  position: absolute;
+  top: -9px;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 1px 8px;
+  font-family: var(--font-matrix-stack);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--amber-phosphor-dim);
+  background: var(--background);
+  text-transform: uppercase;
+  pointer-events: none;
+  z-index: 4;
+  text-shadow: 0 0 3px rgba(255, 179, 71, 0.35);
+}
+
+/* No more chrome screws — the viewport now has a thin amber frame only. */
+.viewport-screw { display: none; }
+
+/* The actual recessed content area inside a viewport bezel */
+.viewport-inner {
+  position: relative;
+  padding: 14px 16px;
+  background:
+    radial-gradient(ellipse at 50% 40%, #1f1205 0%, var(--crt-bg) 65%, #050301 100%);
+  border: 1px solid #000;
+  border-radius: 3px;
+  box-shadow:
+    inset 0 0 0 2px rgba(0,0,0,0.85),
+    inset 0 0 50px rgba(0,0,0,0.7),
+    inset 0 0 14px rgba(255, 110, 0, 0.12);
+  overflow: hidden;
+  color: var(--amber-phosphor);
+}
+
+/* Recessed dark chamber WITHOUT scanlines / phosphor — used for the 3D
+   viewport and any media where CRT FX are distracting but we still want
+   the content to read as "sunken into the machine". */
+.viewport-chamber {
+  position: relative;
+  padding: 0;
+  background: #050301;
+  border: 1px solid #000;
+  border-radius: 3px;
+  box-shadow:
+    inset 0 0 0 2px rgba(0,0,0,0.85),
+    inset 0 0 40px rgba(0,0,0,0.8),
+    inset 0 0 10px rgba(40, 40, 40, 0.4);
+  overflow: hidden;
+}
+
+.viewport-inner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0,0,0,0) 0,
+    rgba(0,0,0,0) 3px,
+    rgba(0,0,0,0.28) 4px);
+  pointer-events: none;
+  z-index: 2;
+}
+.viewport-inner > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Scanline overlay toggle — applied to any element (e.g. buttons, images) */
+.scanlines {
+  position: relative;
+}
+.scanlines::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0,0,0,0) 0,
+    rgba(0,0,0,0) 3px,
+    rgba(0,0,0,0.22) 4px);
+}
+
+/* ==========================================================================
+   TICKER + LEDs + MATRIX RAIN (green, secondary)
+   ========================================================================== */
+
+/* LED pulse — opacity only (composite, no repaint). Static box-shadow. */
+@keyframes led-pulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+.led {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+  animation: led-pulse 2.4s ease-in-out infinite;
+  display: inline-block;
+  flex-shrink: 0;
+  will-change: opacity;
+}
+.led-red   { color: var(--led-red); }
+.led-amber { color: var(--led-amber); }
+.led-green { color: var(--led-green); }
+.led-teal  { color: var(--led-teal); }
+
+/* LED embedded in a metal bezel — ring + center light */
+.led-bezel {
+  position: relative;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #d7ccb4 0%, #6a6151 60%, #2a2520 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(0,0,0,0.6),
+    0 1px 1px rgba(255,255,255,0.35);
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.led-bezel::after {
+  content: "";
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+  animation: led-pulse 2.4s ease-in-out infinite;
+  will-change: opacity;
+}
+
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.ticker-strip {
+  display: flex;
+  overflow: hidden;
+  white-space: nowrap;
+  mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 6%, black 94%, transparent);
+}
+.ticker-track {
+  display: inline-flex;
+  gap: 48px;
+  animation: ticker-scroll 60s linear infinite;
+  will-change: transform;
+}
+
+@keyframes matrix-fall {
+  from { transform: translateY(-100%); }
+  to   { transform: translateY(120%); }
+}
+.matrix-column {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-matrix-stack);
+  font-size: 14px;
+  color: var(--phosphor-dim);
+  line-height: 1.05;
+  opacity: 0.55;
+  animation: matrix-fall linear infinite;
+  user-select: none;
+  pointer-events: none;
+  text-shadow: 0 0 4px rgba(123, 255, 154, 0.4);
+}
+.matrix-column > span:first-child {
+  color: var(--phosphor);
+  text-shadow: 0 0 8px var(--phosphor);
+}
+
+/* ==========================================================================
+   MACHINE BUTTON — chunky, tactile, arcade-like
+   ========================================================================== */
+
+.machine-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 14px 26px;
+  background:
+    linear-gradient(180deg,
+      var(--chassis-bone-hi) 0%,
+      var(--chassis-bone) 50%,
+      var(--chassis-bone-lo) 100%);
+  color: var(--chassis-ink);
+  font-family: var(--font-tech-stack);
+  font-size: 13px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  border: 1px solid var(--chassis-seam);
+  border-radius: 3px;
+  cursor: pointer;
+  box-shadow:
+    inset 1px 1px 0 rgba(255,255,255,0.5),
+    inset -1px -1px 0 rgba(0,0,0,0.35),
+    0 4px 0 var(--chassis-bone-deep),
+    0 4px 4px rgba(0,0,0,0.55);
+  transition:
+    transform 90ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 90ms ease-out,
+    background 120ms ease-out,
+    color 120ms ease-out;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+}
+.machine-btn::before {
+  /* LED indicator — a proper recessed round jewel */
+  content: "";
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #ffec9a, var(--accent) 55%, #6b4a00 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(0,0,0,0.45),
+    0 0 6px rgba(255, 179, 71, 0.85);
+  flex-shrink: 0;
+  opacity: 0.85;
+  transition: opacity 120ms ease-out, box-shadow 120ms ease-out;
+}
+.machine-btn:hover:not(:disabled) {
+  background:
+    linear-gradient(180deg,
+      #f5ecd4 0%,
+      #dfd3ba 50%,
+      #b3a991 100%);
+  color: #120a02;
+}
+.machine-btn:hover:not(:disabled)::before {
+  opacity: 1;
+  animation: led-pulse 1.1s ease-in-out infinite;
+  box-shadow:
+    inset 0 0 0 1px rgba(0,0,0,0.45),
+    0 0 12px rgba(255, 179, 71, 1);
+}
+.machine-btn:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow:
+    inset 1px 1px 3px rgba(0,0,0,0.35),
+    inset -1px -1px 0 rgba(255,255,255,0.35),
+    0 0 0 rgba(0,0,0,0);
+}
+.machine-btn:disabled {
+  color: rgba(43, 39, 33, 0.45);
+  cursor: not-allowed;
+  opacity: 0.75;
+  box-shadow:
+    inset 1px 1px 0 rgba(255,255,255,0.25),
+    inset -1px -1px 0 rgba(0,0,0,0.2),
+    0 3px 0 var(--chassis-bone-deep);
+}
+.machine-btn:disabled::before {
+  background: radial-gradient(circle at 40% 35%, #b0a692, #5c5445 70%);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.4);
+  opacity: 0.6;
+}
+.machine-btn.machine-btn-primary::before {
+  background: radial-gradient(circle at 40% 35%, #ffdf80, #ff7a1f 55%, #5a2200 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(0,0,0,0.45),
+    0 0 8px rgba(255, 140, 40, 0.9);
+}
+.machine-btn.machine-btn-ghost::before {
+  background: radial-gradient(circle at 40% 35%, #d2ebff, #4cc9d4 55%, #133a3e 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(0,0,0,0.4),
+    0 0 6px rgba(76, 201, 212, 0.7);
+}
+
+/* ==========================================================================
+   SERIAL LOG — amber phosphor DOS-feel console
+   ========================================================================== */
+
+.serial-log {
+  font-family: var(--font-matrix-stack);
+  font-size: 16px;
+  line-height: 1.2;
+  color: var(--amber-phosphor-dim);
+  text-shadow: 0 0 3px rgba(255, 179, 71, 0.35);
+}
+.serial-log .serial-active {
+  color: var(--amber-phosphor-hot);
+  text-shadow: var(--amber-glow);
+}
+@keyframes serial-blink {
+  0%, 55% { opacity: 1; }
+  56%, 100% { opacity: 0; }
+}
+.serial-cursor {
+  display: inline-block;
+  width: 0.55em;
+  background: var(--amber-phosphor);
+  margin-left: 2px;
+  animation: serial-blink 0.9s steps(1) infinite;
+  box-shadow: 0 0 6px var(--amber-phosphor);
+}
+
+/* ASCII progress bar — monospace blocks */
+.ascii-bar {
+  font-family: var(--font-matrix-stack);
+  font-size: 15px;
+  letter-spacing: 0;
+  color: var(--amber-phosphor);
+  text-shadow: var(--amber-glow);
+  white-space: pre;
+}
+
+/* CRT flicker on first mount for headings */
+@keyframes crt-warmup {
+  0%   { opacity: 0; transform: scaleY(0.05); filter: brightness(0.2); }
+  30%  { opacity: 0.4; transform: scaleY(1.03); filter: brightness(1.4); }
+  55%  { opacity: 0.85; transform: scaleY(0.99); filter: brightness(1); }
+  70%  { opacity: 0.6; }
+  100% { opacity: 1; transform: scaleY(1); filter: brightness(1); }
+}
+.crt-warmup {
+  animation: crt-warmup 1.2s cubic-bezier(0.4, 0.8, 0.3, 1) 1;
+  transform-origin: center;
+}
+
+/* Terminal input — textarea that looks like a phosphor-CRT terminal */
+.crt-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--amber-phosphor-hot);
+  font-family: var(--font-matrix-stack);
+  font-size: 18px;
+  line-height: 1.35;
+  text-shadow: var(--amber-glow);
+  caret-color: var(--amber-phosphor);
+  resize: none;
+}
+.crt-input::placeholder {
+  color: var(--amber-phosphor-dim);
+  text-shadow: none;
+  opacity: 0.55;
+  font-style: italic;
+}
+.crt-input:focus {
+  outline: none;
+}
+
+/* Inline amber select / small control */
+.crt-select {
+  background: transparent;
+  color: var(--amber-phosphor);
+  border: 1px solid rgba(255, 179, 71, 0.35);
+  padding: 4px 10px;
+  font-family: var(--font-matrix-stack);
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  text-shadow: var(--amber-glow);
+  cursor: pointer;
+}
+.crt-select option {
+  background: #160c03;
+  color: var(--amber-phosphor);
+}
+
+/* Phosphor warm-up used on the main title */
+@keyframes matrix-flicker {
+  0%   { opacity: 0.35; text-shadow: 0 0 2px rgba(255, 179, 71, 0.35); }
+  30%  { opacity: 1;    text-shadow: 0 0 6px rgba(255, 179, 71, 0.75); }
+  45%  { opacity: 0.7; }
+  65%  { opacity: 1; }
+  100% { opacity: 1; text-shadow: var(--amber-glow); }
+}
+.matrix-flicker {
+  animation: matrix-flicker 1.6s ease-out 1;
+}
+
+/* ==========================================================================
+   PERFORMANCE — pause decorative animations for reduced-motion users and
+   when the document is hidden (tab switched away).
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .crt-screen::after,
+  .matrix-column,
+  .ticker-track,
+  .led,
+  .led-bezel::after,
+  .serial-cursor,
+  body.is-idle::after {
+    animation: none !important;
+  }
 }

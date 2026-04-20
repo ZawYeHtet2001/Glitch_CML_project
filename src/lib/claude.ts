@@ -1,5 +1,11 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { SubconsciousAnalysis, KeywordFragment } from "./types";
+import type {
+  SubconsciousAnalysis,
+  KeywordFragment,
+  Connection,
+  OperationNode,
+  ToneArchetype,
+} from "./types";
 
 function extractJSON(text: string): string {
   const match = text.match(/```(?:json)?\s*([\s\S]*?)```/);
@@ -8,6 +14,10 @@ function extractJSON(text: string): string {
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
+  // SDK defaults are 10min timeout + 2 retries. For interactive use, fail
+  // fast — a hung analyze should surface as an error, not a stalled UI.
+  timeout: 30_000,
+  maxRetries: 1,
 });
 
 const ANALYSIS_SYSTEM_PROMPT = `You are analyzing a fragment of subconscious spatial recall. The subject has described a remembered experience — a blend of real memory and dream-state reconstruction. Your role is clinical and interpretive.
@@ -115,13 +125,6 @@ export async function analyzeSubconsciousness(
 }
 
 // --- Art Director: rewrites mechanical prompt into cohesive visual brief ---
-
-import type {
-  SubconsciousAnalysis,
-  Connection,
-  OperationNode,
-  ToneArchetype,
-} from "./types";
 
 const ART_DIRECTOR_SYSTEM_PROMPT = `You are the art director for the Interactive Memory Machine — a system that produces conceptual sculptural artifacts from subconscious spatial recall.
 

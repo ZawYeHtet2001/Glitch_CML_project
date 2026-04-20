@@ -37,68 +37,148 @@ export default function InputForm({ onSubmit }: InputFormProps) {
   const overLimit = charCount > MAX_INPUT_CHARS;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 relative">
+    <form onSubmit={handleSubmit} className="space-y-6 relative">
       {easterEggFired && (
         <div
           aria-live="polite"
           style={{
             position: "absolute",
-            top: -36,
+            top: -28,
             right: 0,
-            fontFamily: "var(--font-mono-stack)",
-            fontSize: 10,
-            letterSpacing: "0.2em",
-            color: "var(--accent)",
-            border: "1px solid var(--accent)",
-            padding: "4px 10px",
-            background: "rgba(232, 184, 74, 0.08)",
+            fontFamily: "var(--font-matrix-stack)",
+            fontSize: 14,
+            letterSpacing: "0.1em",
+            color: "var(--amber-phosphor-hot)",
+            border: "1px solid rgba(255, 179, 71, 0.55)",
+            padding: "4px 12px",
+            background: "rgba(255, 179, 71, 0.08)",
+            textShadow: "var(--amber-glow)",
           }}
         >
           ◉ DEVELOPER RECALL LOADED
         </div>
       )}
-      {/* Subject ID */}
+
+      {/* Subject ID — single-line CRT field */}
       <div>
-        <label className="block text-xs tracking-widest text-[var(--muted)] mb-2">
-          SUBJECT IDENTIFIER
+        <label
+          style={{
+            display: "block",
+            fontFamily: "var(--font-matrix-stack)",
+            fontSize: 15,
+            letterSpacing: "0.1em",
+            color: "var(--amber-phosphor)",
+            textShadow: "var(--amber-glow)",
+            marginBottom: 6,
+          }}
+        >
+          &gt; SUBJECT IDENTIFIER
         </label>
-        <input
-          type="text"
-          value={subjectId}
-          onChange={(e) => setSubjectId(e.target.value)}
-          placeholder="e.g. JW, NT, VP, ZH"
-          className="w-full bg-[var(--card)] border border-[var(--border)] p-3 text-sm text-[var(--foreground)] placeholder-[var(--muted)] focus:border-[var(--accent)] focus:outline-none"
-        />
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            borderBottom: "1px solid rgba(255, 179, 71, 0.35)",
+            paddingBottom: 4,
+          }}
+        >
+          <span
+            style={{
+              fontFamily: "var(--font-matrix-stack)",
+              color: "var(--amber-phosphor)",
+              textShadow: "var(--amber-glow)",
+              fontSize: 18,
+            }}
+          >
+            $
+          </span>
+          <input
+            type="text"
+            value={subjectId}
+            onChange={(e) => setSubjectId(e.target.value)}
+            placeholder="JW / NT / VP / ZH"
+            className="crt-input"
+            style={{ fontSize: 18 }}
+          />
+        </div>
       </div>
 
-      {/* Subconsciousness Text */}
+      {/* Recall Text — terminal textarea */}
       <div>
-        <label className="block text-xs tracking-widest text-[var(--accent)] mb-2">
-          SUBCONSCIOUS SPATIAL RECALL
-        </label>
-        <p className="text-xs text-[var(--muted)] mb-3">
-          Describe a remembered spatial experience — a place from memory, dream, or
-          somewhere in between. Focus on what you recall: the architecture, objects,
-          people, sensations, and how the space felt.
-        </p>
-        <textarea
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          rows={8}
-          maxLength={MAX_INPUT_CHARS}
-          placeholder="I remember a corridor that kept stretching longer as I walked. The walls were concrete but they felt soft. There was a door at the end but every time I reached for it..."
-          className="w-full bg-[var(--card)] border border-[var(--border)] p-4 text-sm text-[var(--foreground)] placeholder-[var(--muted)] focus:border-[var(--accent)] focus:outline-none resize-none"
-        />
-        <div
-          className={`mt-2 text-xs tracking-widest text-right ${
-            overLimit
-              ? "text-red-400"
-              : charCount > MAX_INPUT_CHARS * 0.85
-                ? "text-[var(--accent)]"
-                : "text-[var(--muted)]"
-          }`}
+        <label
+          style={{
+            display: "block",
+            fontFamily: "var(--font-matrix-stack)",
+            fontSize: 15,
+            letterSpacing: "0.1em",
+            color: "var(--amber-phosphor)",
+            textShadow: "var(--amber-glow)",
+            marginBottom: 6,
+          }}
         >
-          {charCount} / {MAX_INPUT_CHARS} CHARS
+          &gt; SUBCONSCIOUS SPATIAL RECALL
+        </label>
+        <p
+          style={{
+            fontFamily: "var(--font-matrix-stack)",
+            color: "var(--amber-phosphor-dim)",
+            textShadow: "0 0 3px rgba(255, 179, 71, 0.35)",
+            fontSize: 14,
+            marginBottom: 8,
+            lineHeight: 1.3,
+          }}
+        >
+          Describe a remembered spatial experience — a place from memory, dream, or
+          somewhere in between. Focus on what you recall: architecture, objects,
+          people, sensations, how the space felt.
+        </p>
+        <div
+          style={{
+            display: "flex",
+            gap: 10,
+            padding: "4px 0",
+            borderTop: "1px solid rgba(255, 179, 71, 0.25)",
+            borderBottom: "1px solid rgba(255, 179, 71, 0.25)",
+          }}
+        >
+          <span
+            style={{
+              fontFamily: "var(--font-matrix-stack)",
+              color: "var(--amber-phosphor)",
+              textShadow: "var(--amber-glow)",
+              fontSize: 18,
+              marginTop: 2,
+            }}
+          >
+            &gt;_
+          </span>
+          <textarea
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            rows={7}
+            maxLength={MAX_INPUT_CHARS}
+            placeholder="I remember a corridor that kept stretching longer as I walked. The walls were concrete but they felt soft. There was a door at the end but every time I reached for it..."
+            className="crt-input"
+          />
+        </div>
+        <div
+          style={{
+            marginTop: 6,
+            textAlign: "right",
+            fontFamily: "var(--font-matrix-stack)",
+            fontSize: 14,
+            color: overLimit
+              ? "var(--led-red)"
+              : charCount > MAX_INPUT_CHARS * 0.85
+                ? "var(--amber-phosphor-hot)"
+                : "var(--amber-phosphor-dim)",
+            textShadow: overLimit
+              ? "0 0 4px rgba(255, 90, 90, 0.7)"
+              : "0 0 3px rgba(255, 179, 71, 0.35)",
+          }}
+        >
+          {charCount.toString().padStart(3, "0")} / {MAX_INPUT_CHARS} CHARS
         </div>
       </div>
 
@@ -106,7 +186,8 @@ export default function InputForm({ onSubmit }: InputFormProps) {
       <button
         type="submit"
         disabled={!subjectId || !inputText || overLimit}
-        className="w-full border border-[var(--accent)] text-[var(--accent)] py-3 text-sm tracking-[0.3em] hover:bg-[var(--accent)] hover:text-black transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+        className="machine-btn machine-btn-primary"
+        style={{ width: "100%" }}
       >
         EXTRACT + ANALYZE
       </button>

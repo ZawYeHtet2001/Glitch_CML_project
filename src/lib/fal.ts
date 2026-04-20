@@ -100,15 +100,59 @@ export async function generateImageWithReference(
   return output.images[0].url;
 }
 
+// --- Image to 3D helpers ---
+
+/** Hard wall-clock cap on any fal.subscribe() call. Prevents a silently
+ * dead job on fal's side from hanging our Next.js handler forever. */
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(
+        Object.assign(new Error(`${label} timed out after ${ms / 1000}s`), {
+          status: 504,
+        })
+      );
+    }, ms);
+    promise
+      .then((v) => {
+        clearTimeout(timer);
+        resolve(v);
+      })
+      .catch((e) => {
+        clearTimeout(timer);
+        reject(e);
+      });
+  });
+}
+
+/** Streams fal's in-queue / in-progress log lines to the Next.js terminal
+ * so we can tell WHY a job is slow (queue depth vs actual compute). */
+function onQueueUpdate(update: { status?: string; logs?: { message: string }[] }) {
+  if (update.status) {
+    // eslint-disable-next-line no-console
+    console.log(`[fal] status: ${update.status}`);
+  }
+  if (update.logs?.length) {
+    for (const l of update.logs) {
+      // eslint-disable-next-line no-console
+      console.log(`[fal] ${l.message}`);
+    }
+  }
+}
+
 // --- Image to 3D: Trellis (Microsoft) ---
 // Cheap (~$0.02), fast, preserves input form fidelity.
 
 async function generate3DTrellis(imageUrl: string): Promise<string> {
-  const result = await fal.subscribe("fal-ai/trellis", {
-    input: {
-      image_url: imageUrl,
-    },
-  });
+  const result = await withTimeout(
+    fal.subscribe("fal-ai/trellis", {
+      input: { image_url: imageUrl },
+      logs: true,
+      onQueueUpdate,
+    }),
+    6 * 60 * 1000,
+    "trellis"
+  );
   const output = result.data as { model_mesh: { url: string } };
   return output.model_mesh.url;
 }
@@ -117,14 +161,20 @@ async function generate3DTrellis(imageUrl: string): Promise<string> {
 // Higher quality with PBR materials, returns multiple format URLs.
 
 async function generate3DHunyuan(imageUrl: string): Promise<string> {
-  const result = await fal.subscribe("fal-ai/hunyuan3d-v3/image-to-3d", {
-    input: {
-      input_image_url: imageUrl,
-      enable_pbr: true,
-      generate_type: "Normal",
-      face_count: 500000,
-    },
-  });
+  const result = await withTimeout(
+    fal.subscribe("fal-ai/hunyuan3d-v3/image-to-3d", {
+      input: {
+        input_image_url: imageUrl,
+        enable_pbr: true,
+        generate_type: "Normal",
+        face_count: 500000,
+      },
+      logs: true,
+      onQueueUpdate,
+    }),
+    10 * 60 * 1000,
+    "hunyuan3d"
+  );
   const output = result.data as { model_glb: { url: string } };
   return output.model_glb.url;
 }

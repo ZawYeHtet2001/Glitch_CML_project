@@ -1,5 +1,12 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono, Inter, EB_Garamond } from "next/font/google";
+import {
+  JetBrains_Mono,
+  Inter,
+  EB_Garamond,
+  Share_Tech_Mono,
+  VT323,
+} from "next/font/google";
+import ChassisFrame from "@/components/ChassisFrame";
 import GrainOverlay from "@/components/GrainOverlay";
 import "./globals.css";
 
@@ -22,6 +29,20 @@ const ebGaramond = EB_Garamond({
   style: ["normal", "italic"],
 });
 
+const shareTechMono = Share_Tech_Mono({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-tech",
+  display: "swap",
+});
+
+const vt323 = VT323({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-matrix",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Interactive Memory Machine",
   description:
@@ -36,9 +57,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${jetbrainsMono.variable} ${inter.variable} ${ebGaramond.variable}`}
+      className={`${jetbrainsMono.variable} ${inter.variable} ${ebGaramond.variable} ${shareTechMono.variable} ${vt323.variable}`}
     >
       <body className="antialiased min-h-screen">
+        <ChassisFrame />
         {children}
         <GrainOverlay />
       </body>

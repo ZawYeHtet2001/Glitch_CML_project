@@ -56,6 +56,9 @@ export default function Model3DViewer({
 }: Model3DViewerProps) {
   const sceneRef = useRef<THREE.Group>(null);
   const [lighting, setLighting] = useState<LightingMode>("studio");
+  // Bump this key whenever the WebGL context is lost so the entire Canvas
+  // (and its GL context) gets torn down and remounted cleanly.
+  const [canvasKey, setCanvasKey] = useState(0);
   const slugged = artifactName ? slugify(artifactName) : "";
   const baseName =
     slugged ||
@@ -107,11 +110,27 @@ export default function Model3DViewer({
         }}
       >
         <Canvas
+          key={canvasKey}
           camera={{ position: [0, 0, 3], fov: 45 }}
-          dpr={[1, 2]}
+          dpr={[1, 1.5]}
           gl={{
             toneMapping: THREE.ACESFilmicToneMapping,
             toneMappingExposure: lighting === "studio" ? 1.1 : 1.0,
+            powerPreference: "high-performance",
+            failIfMajorPerformanceCaveat: false,
+          }}
+          onCreated={({ gl }) => {
+            const canvas = gl.domElement;
+            canvas.addEventListener(
+              "webglcontextlost",
+              (e) => {
+                e.preventDefault();
+                // eslint-disable-next-line no-console
+                console.warn("WebGL context lost — remounting Canvas");
+                setTimeout(() => setCanvasKey((k) => k + 1), 300);
+              },
+              false
+            );
           }}
         >
           <color

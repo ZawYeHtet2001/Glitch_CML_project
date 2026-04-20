@@ -15,6 +15,7 @@ import NodeCanvas from "@/components/NodeCanvas";
 import GenerateButton from "@/components/GenerateButton";
 import GlitchIdle from "@/components/GlitchIdle";
 import MechanicalLoader from "@/components/MechanicalLoader";
+import MachineViewport from "@/components/MachineViewport";
 import { useIdle } from "@/hooks/useIdle";
 
 const Model3DViewer = dynamic(() => import("@/components/Model3DViewer"), {
@@ -251,45 +252,74 @@ export default function Home() {
       ? {
           label: "EXTRACTING SPATIAL RECALL",
           sublabel: "STAGE 01 · KEYWORD + TONE EXTRACTION",
-          estimatedSeconds: 5,
+          estimatedSeconds: 8,
         }
       : session.status === "generating"
         ? {
             label: "COMPOSING SCULPTURAL ARTIFACT",
             sublabel: "STAGE 02 · ART DIRECTOR → IMAGE SYNTHESIS",
-            estimatedSeconds: 48,
+            estimatedSeconds: 95,
           }
         : session.status === "generating_3d"
           ? {
               label: "LIFTING INTO THREE DIMENSIONS",
               sublabel: `STAGE 03 · ${MODEL_3D_LABELS[model3D].toUpperCase()} RECONSTRUCTION`,
-              estimatedSeconds: model3D === "hunyuan3d" ? 180 : 110,
+              estimatedSeconds: model3D === "hunyuan3d" ? 300 : 150,
             }
           : null;
 
   return (
-    <main className="max-w-5xl mx-auto px-6 py-12">
-      {/* Header */}
-      <header className="mb-12 border-b border-[var(--border)] pb-8">
-        <h1 className="text-2xl tracking-[0.3em] font-light glitch-text">
-          <GlitchIdle text="INTERACTIVE MEMORY MACHINE" idle={isIdle} />
-        </h1>
-        <p className="text-sm text-[var(--muted)] mt-2 tracking-widest">
-          <GlitchIdle
-            text={
-              isNightShift
-                ? "SUBCONSCIOUS CHANNEL OPEN — NIGHT SHIFT"
-                : "SPATIAL DISORIENTATION — NODE MAPPING INTERFACE"
-            }
-            idle={isIdle}
-            minIntervalMs={3200}
-            maxIntervalMs={5600}
-          />
-        </p>
-      </header>
+    <main
+      className="mx-auto relative"
+      style={{
+        maxWidth: 1280,
+        paddingLeft: 32,
+        paddingRight: 32,
+        paddingTop: 56,
+        paddingBottom: 64,
+        zIndex: 10,
+      }}
+    >
+      {/* Marquee subtitle — sits above the first panel, below the chassis top band */}
+      <div
+        className="crt-warmup"
+        style={{
+          marginTop: 20,
+          marginBottom: 18,
+          padding: "10px 16px",
+          background: "rgba(255, 179, 71, 0.04)",
+          border: "1px solid rgba(255, 179, 71, 0.25)",
+          borderRadius: 3,
+          fontFamily: "var(--font-matrix-stack)",
+          fontSize: 18,
+          letterSpacing: "0.12em",
+          color: "var(--amber-phosphor)",
+          textShadow: "var(--amber-glow)",
+          textAlign: "center",
+        }}
+      >
+        <GlitchIdle
+          text={
+            isNightShift
+              ? "◆ SUBCONSCIOUS CHANNEL OPEN — NIGHT SHIFT ◆"
+              : "◆ SPATIAL DISORIENTATION — NODE MAPPING INTERFACE ◆"
+          }
+          idle={isIdle}
+          minIntervalMs={3200}
+          maxIntervalMs={5600}
+        />
+      </div>
 
       {/* Input Phase */}
-      {session.status === "input" && <InputForm onSubmit={handleSubmit} />}
+      {session.status === "input" && (
+        <MachineViewport
+          label="INPUT / MEMORY BUS"
+          id="SUBJECT-STREAM"
+          ledColor="green"
+        >
+          <InputForm onSubmit={handleSubmit} />
+        </MachineViewport>
+      )}
 
       {/* Loading — mechanical telemetry per stage */}
       {loaderConfig && (
@@ -311,36 +341,99 @@ export default function Home() {
         session.status === "complete_3d") &&
         session.analysis && (
           <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <p className="text-xs text-[var(--muted)] tracking-widest">
-                SUBJECT: {session.subject_id} — {session.analysis.keywords.length} KEYWORDS — BASE SHAPE: {session.analysis.tone_archetype?.toUpperCase() || "ORGANIC"}
-              </p>
-              {session.analysis.interpretation && (
-                <p className="text-xs text-[var(--muted)] max-w-md text-right">
-                  {session.analysis.interpretation}
-                </p>
-              )}
-            </div>
+            {/* Subject / archetype readout — amber phosphor strip */}
+            <MachineViewport
+              label="ANALYSIS / RESULT"
+              id={`CH.01 · ${session.subject_id || "??"}`}
+              ledColor="green"
+              screws={false}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  gap: 20,
+                  fontFamily: "var(--font-matrix-stack)",
+                }}
+              >
+                <div
+                  style={{
+                    color: "var(--amber-phosphor-hot)",
+                    textShadow: "var(--amber-glow)",
+                    fontSize: 16,
+                    letterSpacing: "0.08em",
+                  }}
+                >
+                  &gt; SUBJECT:&nbsp;{session.subject_id} &nbsp;·&nbsp; {session.analysis.keywords.length} KEYWORDS &nbsp;·&nbsp; BASE SHAPE: {session.analysis.tone_archetype?.toUpperCase() || "ORGANIC"}
+                </div>
+                {session.analysis.interpretation && (
+                  <div
+                    style={{
+                      color: "var(--amber-phosphor-dim)",
+                      textShadow: "0 0 3px rgba(255, 179, 71, 0.35)",
+                      fontSize: 14,
+                      maxWidth: 420,
+                      textAlign: "right",
+                      lineHeight: 1.25,
+                    }}
+                  >
+                    {session.analysis.interpretation}
+                  </div>
+                )}
+              </div>
+            </MachineViewport>
 
             {/* Original input text — kept visible through mapping/generating/complete */}
             {session.input_text && (
-              <details
-                open
-                className="border border-[var(--border)] bg-[var(--card)] p-4"
+              <MachineViewport
+                label="SUBCONSCIOUS RECALL / INPUT LOG"
+                id="ARCHIVED"
+                ledColor="amber"
               >
-                <summary className="text-xs tracking-widest text-[var(--accent)] cursor-pointer select-none">
-                  SUBCONSCIOUS RECALL (INPUT)
-                </summary>
-                <p className="mt-3 text-sm text-[var(--foreground)] leading-relaxed whitespace-pre-wrap">
-                  {session.input_text}
-                </p>
-              </details>
+                <details open style={{ color: "var(--amber-phosphor)" }}>
+                  <summary
+                    style={{
+                      cursor: "pointer",
+                      userSelect: "none",
+                      fontFamily: "var(--font-matrix-stack)",
+                      fontSize: 15,
+                      letterSpacing: "0.08em",
+                      color: "var(--amber-phosphor-hot)",
+                      textShadow: "var(--amber-glow)",
+                      paddingBottom: 8,
+                      borderBottom: "1px solid rgba(255, 179, 71, 0.25)",
+                    }}
+                  >
+                    &gt; cat /archive/subject/{session.subject_id || "??"}/recall.log
+                  </summary>
+                  <p
+                    style={{
+                      marginTop: 12,
+                      fontFamily: "var(--font-matrix-stack)",
+                      fontSize: 16,
+                      lineHeight: 1.45,
+                      color: "var(--amber-phosphor)",
+                      textShadow: "0 0 4px rgba(255, 179, 71, 0.45)",
+                      whiteSpace: "pre-wrap",
+                    }}
+                  >
+                    {session.input_text}
+                  </p>
+                </details>
+              </MachineViewport>
             )}
 
-            <NodeCanvas
-              analysis={session.analysis}
-              onConnectionsChange={handleConnectionsChange}
-            />
+            <MachineViewport
+              label="NODE GRAPH / DISTORTION MAP"
+              id="12 CHANNELS"
+              ledColor="amber"
+            >
+              <NodeCanvas
+                analysis={session.analysis}
+                onConnectionsChange={handleConnectionsChange}
+              />
+            </MachineViewport>
 
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <GenerateButton
@@ -357,29 +450,13 @@ export default function Home() {
                   flexShrink: 0,
                 }}
               >
-                <label
-                  style={{
-                    fontSize: 10,
-                    letterSpacing: "0.15em",
-                    color: "var(--muted)",
-                    fontFamily: "var(--font-mono-stack)",
-                  }}
-                >
+                <label className="stencil" style={{ fontSize: 10 }}>
                   MODEL
                 </label>
                 <select
                   value={imageModel}
                   onChange={(e) => setImageModel(e.target.value as ImageModel)}
-                  style={{
-                    background: "var(--card)",
-                    color: "var(--foreground)",
-                    border: "1px solid var(--border)",
-                    padding: "6px 10px",
-                    fontSize: 11,
-                    fontFamily: "var(--font-mono-stack)",
-                    letterSpacing: "0.05em",
-                    cursor: "pointer",
-                  }}
+                  className="crt-select"
                 >
                   {(Object.keys(IMAGE_MODEL_LABELS) as ImageModel[]).map((m) => (
                     <option key={m} value={m}>
@@ -398,9 +475,23 @@ export default function Home() {
         session.status === "complete_3d") &&
         session.generated_image_url && (
           <div className="mt-8 space-y-4">
-            <div className="space-y-1">
-              <label className="block text-xs tracking-widest text-[var(--accent)]">
-                ARTIFACT NAME
+            <MachineViewport
+              label="ARTIFACT / IDENTIFIER"
+              id="FILENAME"
+              ledColor="amber"
+            >
+              <label
+                style={{
+                  display: "block",
+                  fontFamily: "var(--font-matrix-stack)",
+                  fontSize: 14,
+                  letterSpacing: "0.1em",
+                  color: "var(--amber-phosphor-dim)",
+                  textShadow: "0 0 3px rgba(255, 179, 71, 0.35)",
+                  marginBottom: 6,
+                }}
+              >
+                &gt; ARTIFACT NAME
               </label>
               <input
                 type="text"
@@ -410,56 +501,83 @@ export default function Home() {
                 }
                 placeholder="Untitled Artifact"
                 maxLength={80}
-                className="w-full bg-transparent border-0 border-b border-[var(--border)] focus:border-[var(--accent)] outline-none text-2xl tracking-wide py-2 text-[var(--foreground)] transition-colors"
+                className="crt-input"
                 style={{
-                  fontFamily: "var(--font-serif-stack)",
-                  fontStyle: "italic",
-                  fontWeight: 500,
+                  fontSize: 26,
+                  paddingBottom: 6,
+                  borderBottom: "1px solid rgba(255, 179, 71, 0.3)",
                 }}
               />
               <p
                 style={{
-                  fontSize: 9,
-                  color: "var(--muted)",
-                  letterSpacing: "0.15em",
-                  fontFamily: "var(--font-mono-stack)",
+                  marginTop: 8,
+                  fontSize: 12,
+                  color: "var(--amber-phosphor-dim)",
+                  textShadow: "0 0 3px rgba(255, 179, 71, 0.3)",
+                  letterSpacing: "0.12em",
+                  fontFamily: "var(--font-matrix-stack)",
                 }}
               >
-                CLICK TO EDIT · USED AS THE EXPORT FILENAME
+                // CLICK TO EDIT · USED AS THE EXPORT FILENAME
               </p>
-            </div>
+            </MachineViewport>
 
-            <div className="border border-[var(--border)] p-2">
-              <img
-                src={session.generated_image_url}
-                alt={session.artifact_name || "Generated spatial memory artifact"}
-                className="w-full"
-              />
-            </div>
+            <MachineViewport
+              label="ARTIFACT / 2D"
+              id={`FRAME · ${session.subject_id || "??"}`}
+              ledColor="amber"
+              crt={false}
+              phosphor={false}
+              chamber={false}
+            >
+              <div style={{ padding: 0, background: "#000" }}>
+                <img
+                  src={session.generated_image_url}
+                  alt={session.artifact_name || "Generated spatial memory artifact"}
+                  className="w-full"
+                  style={{ display: "block" }}
+                />
+              </div>
+            </MachineViewport>
 
             {session.explanation && (
-              <div className="border border-[var(--border)] bg-[var(--card)] p-6 space-y-3">
-                <label className="block text-xs tracking-widest text-[var(--accent)]">
-                  YOUR ARTIFACT — EXPLAINED
-                </label>
-                <div className="text-sm text-[var(--foreground)] leading-relaxed whitespace-pre-wrap">
+              <MachineViewport label="INTERPRETATION / LOG" ledColor="green">
+                <div
+                  style={{
+                    fontFamily: "var(--font-matrix-stack)",
+                    fontSize: 16,
+                    lineHeight: 1.45,
+                    color: "var(--amber-phosphor)",
+                    textShadow: "0 0 4px rgba(255, 179, 71, 0.45)",
+                    whiteSpace: "pre-wrap",
+                    letterSpacing: "0.02em",
+                  }}
+                >
                   {session.explanation}
                 </div>
-              </div>
+              </MachineViewport>
             )}
 
-            {/* 3D Viewer — shown once a model has been generated */}
+            {/* 3D Viewer — thin amber frame, dark inside. */}
             {session.model_3d_url && (
-              <div className="space-y-2 pt-4">
-                <label className="block text-xs tracking-widest text-[var(--accent)]">
-                  SCULPTURAL ARTIFACT — 3D
-                </label>
-                <Model3DViewer
-                  key={session.model_3d_url}
-                  glbUrl={session.model_3d_url}
-                  artifactName={session.artifact_name}
-                  subjectId={session.subject_id}
-                />
+              <div className="pt-4">
+                <MachineViewport
+                  label="ARTIFACT / 3D · ORBIT"
+                  id={`MESH · ${(MODEL_3D_LABELS[model3D] || "").toUpperCase()}`}
+                  ledColor="amber"
+                  crt={false}
+                  phosphor={false}
+                  chamber={false}
+                >
+                  <div style={{ padding: 12, background: "var(--background)" }}>
+                    <Model3DViewer
+                      key={session.model_3d_url}
+                      glbUrl={session.model_3d_url}
+                      artifactName={session.artifact_name}
+                      subjectId={session.subject_id}
+                    />
+                  </div>
+                </MachineViewport>
               </div>
             )}
 
@@ -475,29 +593,8 @@ export default function Home() {
               <button
                 onClick={handleGenerate3D}
                 disabled={session.status === "generating_3d"}
-                style={{
-                  flex: 1,
-                  padding: "14px 24px",
-                  background: "transparent",
-                  border: `1px solid ${
-                    session.status === "generating_3d"
-                      ? "var(--border)"
-                      : "var(--accent)"
-                  }`,
-                  borderRadius: 4,
-                  color:
-                    session.status === "generating_3d"
-                      ? "var(--muted)"
-                      : "var(--accent)",
-                  fontFamily: "var(--font-mono-stack)",
-                  fontSize: 13,
-                  letterSpacing: "0.2em",
-                  cursor:
-                    session.status === "generating_3d"
-                      ? "not-allowed"
-                      : "pointer",
-                  transition: "all 0.2s ease",
-                }}
+                className="machine-btn machine-btn-primary"
+                style={{ flex: 1 }}
               >
                 {session.status === "generating_3d"
                   ? "LIFTING TO 3D..."
@@ -513,30 +610,14 @@ export default function Home() {
                   flexShrink: 0,
                 }}
               >
-                <label
-                  style={{
-                    fontSize: 10,
-                    letterSpacing: "0.15em",
-                    color: "var(--muted)",
-                    fontFamily: "var(--font-mono-stack)",
-                  }}
-                >
+                <label className="stencil" style={{ fontSize: 10 }}>
                   3D MODEL
                 </label>
                 <select
                   value={model3D}
                   onChange={(e) => setModel3D(e.target.value as Model3D)}
                   disabled={session.status === "generating_3d"}
-                  style={{
-                    background: "var(--card)",
-                    color: "var(--foreground)",
-                    border: "1px solid var(--border)",
-                    padding: "6px 10px",
-                    fontSize: 11,
-                    fontFamily: "var(--font-mono-stack)",
-                    letterSpacing: "0.05em",
-                    cursor: "pointer",
-                  }}
+                  className="crt-select"
                 >
                   {(Object.keys(MODEL_3D_LABELS) as Model3D[]).map((m) => (
                     <option key={m} value={m}>
@@ -549,7 +630,8 @@ export default function Home() {
 
             <button
               onClick={() => dispatch({ type: "RESET" })}
-              className="w-full border border-[var(--muted-strong)] text-[var(--muted-strong)] py-3 text-sm tracking-[0.3em] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors"
+              className="machine-btn machine-btn-ghost"
+              style={{ width: "100%" }}
             >
               NEW SESSION
             </button>

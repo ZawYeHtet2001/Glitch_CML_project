@@ -11,8 +11,7 @@ export default function GrainOverlay() {
         zIndex: 9997,
         backgroundImage: `url("data:image/svg+xml;utf8,${GRAIN_SVG}")`,
         backgroundSize: "200px 200px",
-        opacity: 0.06,
-        mixBlendMode: "overlay",
+        opacity: 0.05,
       }}
     />
   );
