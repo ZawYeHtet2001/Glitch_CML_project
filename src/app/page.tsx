@@ -16,6 +16,7 @@ import GenerateButton from "@/components/GenerateButton";
 import GlitchIdle from "@/components/GlitchIdle";
 import MechanicalLoader from "@/components/MechanicalLoader";
 import MachineViewport from "@/components/MachineViewport";
+import ViewerErrorBoundary from "@/components/ViewerErrorBoundary";
 import { useIdle } from "@/hooks/useIdle";
 
 const Model3DViewer = dynamic(() => import("@/components/Model3DViewer"), {
@@ -570,12 +571,14 @@ export default function Home() {
                   chamber={false}
                 >
                   <div style={{ padding: 12, background: "var(--background)" }}>
-                    <Model3DViewer
-                      key={session.model_3d_url}
-                      glbUrl={session.model_3d_url}
-                      artifactName={session.artifact_name}
-                      subjectId={session.subject_id}
-                    />
+                    <ViewerErrorBoundary>
+                      <Model3DViewer
+                        key={session.model_3d_url}
+                        glbUrl={session.model_3d_url}
+                        artifactName={session.artifact_name}
+                        subjectId={session.subject_id}
+                      />
+                    </ViewerErrorBoundary>
                   </div>
                 </MachineViewport>
               </div>
