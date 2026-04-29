@@ -27,3 +27,9 @@ npm-debug.log*
 next-env.d.ts
 
 .vercel
+
+# Claude Code project tooling
+.claude/
+
+# Large test image dataset — included in submission zip but kept out of git
+/Test_imgs/
